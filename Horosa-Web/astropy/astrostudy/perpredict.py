@@ -72,7 +72,7 @@ ASTROAPP_PD_PLANET_IDS = {
     const.NEPTUNE,
     const.PLUTO,
 }
-ASTROAPP_PD_OBJECT_IDS = [
+ASTROAPP_PD_PROMISSOR_IDS = [
     const.SUN,
     const.MOON,
     const.MERCURY,
@@ -84,7 +84,17 @@ ASTROAPP_PD_OBJECT_IDS = [
     const.NEPTUNE,
     const.PLUTO,
     const.NORTH_NODE,
+    const.PARS_FORTUNA,
 ]
+ASTROAPP_PD_SIGNIFICATOR_IDS = [
+    *ASTROAPP_PD_PROMISSOR_IDS,
+]
+ASTROAPP_PD_VIRTUAL_SIGNIFICATOR_IDS = {
+    const.ASC,
+    const.MC,
+    const.PARS_FORTUNA,
+    const.NORTH_NODE,
+}
 _ASTROAPP_PD_ASC_CASE_CORR_MODEL_CACHE = None
 _ASTROAPP_PD_ASC_CASE_CORR_MODEL_READY = False
 _ASTROAPP_PD_VIRTUAL_BODY_CORR_MODEL_CACHE = {}
@@ -734,13 +744,13 @@ class PerPredict:
         aspList = self.perchart.pdaspects
 
         # Significators
-        sig_objs = pd._elements(ASTROAPP_PD_OBJECT_IDS, pd.N, [0])
+        sig_objs = pd._elements(ASTROAPP_PD_SIGNIFICATOR_IDS, pd.N, [0])
         sig_houses = pd._elements(pd.SIG_HOUSES, pd.N, [0])
         sig_angles = pd._elements(pd.SIG_ANGLES, pd.N, [0])
         significators = sig_objs + sig_houses + sig_angles
 
         # Promissors
-        promissors = pd._elements(ASTROAPP_PD_OBJECT_IDS, pd.N, aspList)
+        promissors = pd._elements(ASTROAPP_PD_PROMISSOR_IDS, pd.N, aspList)
 
         # AstroApp settings use the true node, while flatlib's default north node
         # object is the mean node. Rebuild node-derived rows locally for this branch.
@@ -780,7 +790,7 @@ class PerPredict:
                 # subset, while ordinary planet-to-planet rows should stay untouched.
                 if sig_base == const.ASC and not self._astroappHasVirtualBodyCorrectionModel(self._baseDirectionObjectId(prom_id)):
                     prom_for_arc = self._rebuildAstroAppTruePosMoonPoint(pd, chart, prom)
-                if sig_base in [const.ASC, const.MC, const.NORTH_NODE]:
+                if sig_base in ASTROAPP_PD_VIRTUAL_SIGNIFICATOR_IDS:
                     prom_model_arc = self._applyAstroAppPromissorBodyModelCorrection(pd, chart, prom_for_arc)
                     if prom_model_arc is not None:
                         prom_for_arc = prom_model_arc
@@ -806,6 +816,18 @@ class PerPredict:
                     if prom_ra_arc is None:
                         continue
                     arc = self._norm180(float(prom_ra_arc) - float(sig_ra_z))
+                elif sig_base == const.PARS_FORTUNA:
+                    sig_ra_z, _ = self._astroappPointEqCoords(sig, astroapp_mean_obliquity, zero_lat=True)
+                    if sig_ra_z is None:
+                        continue
+                    prom_ra_arc, _ = self._astroappPointEqCoords(prom_for_arc, astroapp_mean_obliquity, zero_lat=True)
+                    if prom_ra_arc is None:
+                        continue
+                    # The current compatibility dataset exposes Pars Fortuna as
+                    # object id 100. It receives the same virtual-row promissor
+                    # correction layer, but its sign follows the ordinary
+                    # zodiacal kernel.
+                    arc = self._norm180(float(sig_ra_z) - float(prom_ra_arc))
                 else:
                     sig_ra, _ = self._astroappPointEqCoords(sig, astroapp_mean_obliquity, zero_lat=False)
                     if sig_ra is None:
