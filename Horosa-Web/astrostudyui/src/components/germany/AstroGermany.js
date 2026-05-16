@@ -1,10 +1,8 @@
 import { Component } from 'react';
-import { Row, Col, Tabs, Input, Button, } from 'antd';
 import AstroMidpoint from './AstroMidpoint'
-import * as Constants from '../../utils/constants';
-import request from '../../utils/request';
+import { XQTabs } from '../xq-ui';
 
-const TabPane = Tabs.TabPane;
+const TabPane = XQTabs.TabPane;
 
 class AstroGermany extends Component{
 
@@ -42,7 +40,7 @@ class AstroGermany extends Component{
 		let hook = this.state.hook;
 		if(hook[this.state.currentTab].fun){
 			hook[this.state.currentTab].fun()
-		}	
+		}
 	}
 
 	changeTab(key){
@@ -72,27 +70,27 @@ class AstroGermany extends Component{
 		let hook = this.state.hook;
 
 		return (
-			<div>
-				<Tabs 
+			<div className="horosa-aux-module-page xq-chart-renderer xq-chart-renderer-germany">
+				<XQTabs
 					defaultActiveKey={this.state.currentTab} tabPosition='right'
 					onChange={this.changeTab}
 					style={{ height: height }}
 				>
 					<TabPane tab="行星中点" key="Midpoint">
-							<AstroMidpoint 
+							<AstroMidpoint
 								onChange={this.onFieldsChange}
 								height={height}
 								fields={this.props.fields}
 								chart={this.props.chart}
 								chartDisplay={this.props.chartDisplay}
 								planetDisplay={this.props.planetDisplay}
-								lotsDisplay={this.props.lotsDisplay}	
+								lotsDisplay={this.props.lotsDisplay}
 								showAstroMeaning={this.props.showAstroMeaning}
-								hook={hook.Midpoint}	
+								hook={hook.Midpoint}
 							/>
 					</TabPane>
 
-				</Tabs>
+				</XQTabs>
 			</div>
 		);
 	}

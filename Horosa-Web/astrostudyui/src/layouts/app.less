@@ -1638,7 +1638,11 @@
     .horosa-workspace-shell .xq-chart-renderer-liuyao,
     .horosa-workspace-shell .xq-chart-renderer-jinkou,
     .horosa-workspace-shell .xq-chart-renderer-direction,
-    .horosa-workspace-shell .xq-chart-renderer-fengshui {
+    .horosa-workspace-shell .xq-chart-renderer-fengshui,
+    .horosa-workspace-shell .xq-chart-renderer-hellen,
+    .horosa-workspace-shell .xq-chart-renderer-germany,
+    .horosa-workspace-shell .xq-chart-renderer-locastro,
+    .horosa-workspace-shell .xq-chart-renderer-dice {
         background:
             radial-gradient(circle at 50% 10%, var(--horosa-gold-soft), transparent 24%),
             linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 64%),
@@ -1653,7 +1657,11 @@
     :root[data-horosa-appearance='dark'] .horosa-workspace-shell .xq-chart-renderer-liuyao,
     :root[data-horosa-appearance='dark'] .horosa-workspace-shell .xq-chart-renderer-jinkou,
     :root[data-horosa-appearance='dark'] .horosa-workspace-shell .xq-chart-renderer-direction,
-    :root[data-horosa-appearance='dark'] .horosa-workspace-shell .xq-chart-renderer-fengshui {
+    :root[data-horosa-appearance='dark'] .horosa-workspace-shell .xq-chart-renderer-fengshui,
+    :root[data-horosa-appearance='dark'] .horosa-workspace-shell .xq-chart-renderer-hellen,
+    :root[data-horosa-appearance='dark'] .horosa-workspace-shell .xq-chart-renderer-germany,
+    :root[data-horosa-appearance='dark'] .horosa-workspace-shell .xq-chart-renderer-locastro,
+    :root[data-horosa-appearance='dark'] .horosa-workspace-shell .xq-chart-renderer-dice {
         background:
             radial-gradient(circle at 50% 8%, rgba(216, 173, 99, 0.11), transparent 28%),
             linear-gradient(180deg, rgba(18, 41, 58, 0.72), rgba(7, 16, 26, 0.64)),
@@ -1668,7 +1676,11 @@
     .horosa-workspace-shell .xq-chart-renderer-liuyao .ant-card,
     .horosa-workspace-shell .xq-chart-renderer-jinkou .ant-card,
     .horosa-workspace-shell .xq-chart-renderer-direction .ant-card,
-    .horosa-workspace-shell .xq-chart-renderer-fengshui .ant-card {
+    .horosa-workspace-shell .xq-chart-renderer-fengshui .ant-card,
+    .horosa-workspace-shell .xq-chart-renderer-hellen .ant-card,
+    .horosa-workspace-shell .xq-chart-renderer-germany .ant-card,
+    .horosa-workspace-shell .xq-chart-renderer-locastro .ant-card,
+    .horosa-workspace-shell .xq-chart-renderer-dice .ant-card {
         background:
             linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent),
             var(--horosa-panel-soft);
@@ -1681,10 +1693,30 @@
     .horosa-workspace-shell .horosa-guazhan-page,
     .horosa-workspace-shell .horosa-jinkou-page,
     .horosa-workspace-shell .horosa-direction-page,
-    .horosa-workspace-shell .horosa-fengshui-page {
+    .horosa-workspace-shell .horosa-fengshui-page,
+    .horosa-workspace-shell .horosa-aux-module-page {
         height: 100%;
         min-height: 0;
         color: var(--horosa-text);
+    }
+
+    .horosa-workspace-shell .horosa-aux-module-page {
+        overflow: hidden;
+        border: 1px solid var(--horosa-border);
+        border-radius: var(--horosa-radius);
+        background: var(--horosa-panel-bg);
+        box-shadow: var(--horosa-small-shadow);
+    }
+
+    .horosa-workspace-shell .horosa-aux-module-page > .xq-tabs {
+        height: 100%;
+    }
+
+    .horosa-workspace-shell .horosa-aux-module-page .ant-tabs-content-holder {
+        min-height: 0;
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.10), transparent 62%),
+            var(--horosa-surface-solid);
     }
 
     .horosa-workspace-shell .horosa-liureng-page > .ant-row,

@@ -74,6 +74,42 @@ export function XQToolbar({children, className = '', compact = false, ...rest}){
 	);
 }
 
+export function XQSectionTitle({children, className = '', ...rest}){
+	return (
+		<div {...rest} className={`xq-section-title ${className}`.trim()}>
+			{children}
+		</div>
+	);
+}
+
+export function XQCheckItem({checked, children, className = '', compact = false, marker, ...rest}){
+	return (
+		<button
+			type="button"
+			{...rest}
+			className={`xq-check-item ${checked ? 'xq-check-item-checked' : ''} ${compact ? 'xq-check-item-compact' : ''} ${className}`.trim()}
+			aria-pressed={checked}
+		>
+			<span className="xq-check-box" aria-hidden="true">
+				{checked ? '✓' : ''}
+			</span>
+			<span className="xq-check-content">{children}</span>
+			{marker ? <span className="xq-check-marker">{marker}</span> : null}
+		</button>
+	);
+}
+
+export function XQCheckList({children, className = '', columns = 1, ...rest}){
+	return (
+		<div
+			{...rest}
+			className={`xq-check-list xq-check-list-${columns} ${className}`.trim()}
+		>
+			{children}
+		</div>
+	);
+}
+
 export function XQSelect({className = '', popupClassName = '', dropdownClassName = '', ...rest}){
 	return (
 		<Select
@@ -92,6 +128,8 @@ export function XQTabs({className = '', ...rest}){
 		/>
 	);
 }
+
+XQTabs.TabPane = Tabs.TabPane;
 
 export function XQDrawer({className = '', children, ...rest}){
 	return (

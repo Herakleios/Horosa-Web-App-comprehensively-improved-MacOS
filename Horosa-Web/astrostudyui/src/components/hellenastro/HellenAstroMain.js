@@ -1,8 +1,8 @@
 import { Component } from 'react';
-import { Row, Col, Tabs, Tooltip } from 'antd';
 import AstroChart13 from './AstroChart13';
+import { XQTabs } from '../xq-ui';
 
-const TabPane = Tabs.TabPane;
+const TabPane = XQTabs.TabPane;
 
 class HellenAstroMain extends Component{
 
@@ -13,7 +13,7 @@ class HellenAstroMain extends Component{
 			hook: {
 				Chart13:{
 					fun: null
-				},	
+				},
 			},
 		};
 
@@ -35,14 +35,14 @@ class HellenAstroMain extends Component{
 	}
 
 
-	changeTab(key){		
+	changeTab(key){
 		let hook = this.state.hook;
 		this.setState({
 			currentTab: key,
 		}, ()=>{
 			if(this.state.hook[key] && this.state.hook[key].fun){
 				this.state.hook[key].fun();
-			}	
+			}
 			if(this.props.dispatch){
 				this.props.dispatch({
 					type: 'astro/save',
@@ -50,7 +50,7 @@ class HellenAstroMain extends Component{
 						currentSubTab: key,
 					}
 				});
-			}	
+			}
 		});
 	}
 
@@ -61,7 +61,7 @@ class HellenAstroMain extends Component{
 			if(hook.fun){
 				hook.fun(flds);
 			}
-		}		
+		}
 	}
 
 	componentDidMount(){
@@ -77,8 +77,8 @@ class HellenAstroMain extends Component{
 
 
 		return (
-			<div >
-				<Tabs 
+			<div className="horosa-aux-module-page xq-chart-renderer xq-chart-renderer-hellen">
+				<XQTabs
 					defaultActiveKey={this.state.currentTab} tabPosition='right'
 					onChange={this.changeTab}
 					style={{ height: height }}
@@ -86,18 +86,18 @@ class HellenAstroMain extends Component{
 					<TabPane tab='十三分盘' key="Chart13" >
 							<AstroChart13
 								onChange={this.onFieldsChange}
-							fields={fields} 
-							height={height} 
+							fields={fields}
+							height={height}
 							chartDisplay={this.props.chartDisplay}
 								planetDisplay={this.props.planetDisplay}
 								lotsDisplay={this.props.lotsDisplay}
 								showPlanetHouseInfo={this.props.showPlanetHouseInfo}
 								showAstroMeaning={this.props.showAstroMeaning}
 								hook={this.state.hook.Chart13}
-							/>						
+							/>
 					</TabPane>
 
-				</Tabs>
+				</XQTabs>
 			</div>
 		);
 	}

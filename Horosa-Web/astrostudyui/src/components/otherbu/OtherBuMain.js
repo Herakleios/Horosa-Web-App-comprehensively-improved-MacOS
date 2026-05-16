@@ -1,10 +1,10 @@
 import { Component } from 'react';
-import { Row, Col, Tabs, } from 'antd';
 import { randomStr } from '../../utils/helper';
 import DiceMain from '../dice/DiceMain';
+import { XQTabs } from '../xq-ui';
 
 
-const TabPane = Tabs.TabPane;
+const TabPane = XQTabs.TabPane;
 
 class OtherBuMain extends Component{
 
@@ -49,7 +49,7 @@ class OtherBuMain extends Component{
 						currentSubTab: key,
 					}
 				});
-			}	
+			}
 		});
 	}
 
@@ -59,14 +59,14 @@ class OtherBuMain extends Component{
 		height = height - 20;
 
 		return (
-			<div id={this.state.divId}>
-				<Tabs 
+			<div id={this.state.divId} className="horosa-aux-module-page xq-chart-renderer xq-chart-renderer-dice">
+				<XQTabs
 					defaultActiveKey={this.state.currentTab} tabPosition='right'
 					onChange={this.changeTab}
 					style={{ height: height }}
 				>
 					<TabPane tab="星盘骰子" key="touzi">
-							<DiceMain 
+							<DiceMain
 								height={height}
 								fields={this.props.fields}
 								chartDisplay={this.props.chartDisplay}
@@ -78,7 +78,7 @@ class OtherBuMain extends Component{
 							/>
 					</TabPane>
 
-				</Tabs>
+				</XQTabs>
 			</div>
 		);
 	}

@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Row, Col, Tabs, Select, Button, Tooltip } from 'antd';
+import { Row, Col, Select, Tooltip } from 'antd';
 import AstroChart from './AstroChart';
 import AstroInfo from './AstroInfo';
 import AstroAspect from './AstroAspect';
@@ -13,10 +13,10 @@ import { convertLatToStr, convertLonToStr} from './AstroHelper';
 import { getHousesOption } from '../comp/CompHelper'
 import * as AstroConst from '../../constants/AstroConst';
 import * as AstroText from '../../constants/AstroText';
-import { XQButton, XQSegmented, XQToggle } from '../xq-ui';
+import { XQButton, XQSegmented, XQSelect, XQTabs, XQToggle } from '../xq-ui';
 import XQIcon from '../xq-icons';
 
-const TabPane = Tabs.TabPane;
+const TabPane = XQTabs.TabPane;
 const Option = Select.Option;
 
 function fieldValue(fields, key, fallback = ''){
@@ -94,13 +94,13 @@ class AstroChartMain extends Component{
 					tm: tm,
 					ad: tm.ad,
 					zone: tm.zone,
-				});	
+				});
 			}else{
 				this.props.onChange({
 					zodiacal: val,
-				});	
+				});
 			}
-	
+
 		}
 	}
 
@@ -113,11 +113,11 @@ class AstroChartMain extends Component{
 					tm: tm,
 					ad: tm.ad,
 					zone: tm.zone,
-				});	
+				});
 			}else{
 				this.props.onChange({
 					hsys: val,
-				});	
+				});
 			}
 		}
 	}
@@ -139,11 +139,11 @@ class AstroChartMain extends Component{
 					tm: tm,
 					ad: tm.ad,
 					zone: tm.zone,
-				});		
+				});
 			}else{
 				this.props.onChange({
 					southchart: val,
-				});	
+				});
 			}
 		}
 	}
@@ -160,14 +160,14 @@ class AstroChartMain extends Component{
 					tm: tm,
 					ad: tm.ad,
 					zone: tm.zone,
-				});	
+				});
 			}else{
 				this.props.onChange({
 					lon: convertLonToStr(rec.lng),
 					lat: convertLatToStr(rec.lat),
 					gpsLon: rec.gpsLng,
 					gpsLat: rec.gpsLat
-				});	
+				});
 			}
 		}
 	}
@@ -369,7 +369,7 @@ class AstroChartMain extends Component{
 					{meta.trueSolarTime ? (
 						<div>
 							<Tooltip title={`真太阳时：${formatTrueSolarTime(meta.trueSolarTime)}`} placement="right">
-								<Button className="horosa-true-solar-button" size="small">真太阳时</Button>
+								<XQButton className="horosa-true-solar-button" size="small">真太阳时</XQButton>
 							</Tooltip>
 						</div>
 					) : null}
@@ -434,7 +434,7 @@ class AstroChartMain extends Component{
 		];
 		return (
 			<div className="horosa-interpretation-panel">
-				<Tabs defaultActiveKey="interpret" tabPosition="top" className="horosa-interpretation-tabs">
+						<XQTabs defaultActiveKey="interpret" tabPosition="top" className="horosa-interpretation-tabs">
 					<TabPane tab="解读" key="interpret">
 						<div className="horosa-reading-lines">
 							{summary.map((line)=><p key={line}>{line}</p>)}
@@ -450,7 +450,7 @@ class AstroChartMain extends Component{
 							<p>{memo || '暂无批注'}</p>
 						</div>
 					</TabPane>
-				</Tabs>
+				</XQTabs>
 			</div>
 		);
 	}
@@ -497,7 +497,7 @@ class AstroChartMain extends Component{
 			}else{
 				dt.parse(dtstr, 'YYYY-MM-DD');
 			}
-		}	
+		}
 
 		let height = this.props.height ? this.props.height : 760;
 		let tabHeight = height - 100;
@@ -567,59 +567,59 @@ class AstroChartMain extends Component{
 								showdateselector && (
 									<Col span={24}>
 										<PlusMinusTime value={dt} onChange={this.changeTime} hook={this.tmHook} />
-									</Col>	
+									</Col>
 								)
 							}
 							{
 								showzodical && (
 									<Col span={7}>
-										<Select 
+										<XQSelect
 											style={{width: '100%'}}
 											onChange={this.changeZodiacal}
 											value={this.props.fields.zodiacal.value} size='small'>
 											<Option value={0}>回归黄道</Option>
 											<Option value={1}>恒星黄道</Option>
-										</Select>
+										</XQSelect>
 									</Col>
-	
+
 								)
 							}
 							{
 								showhsys && (
 									<Col span={10}>
-										<Select style={{width: '100%'}}
+										<XQSelect style={{width: '100%'}}
 											onChange={this.changeHsys}
-											value={this.props.fields.hsys.value} 
+											value={this.props.fields.hsys.value}
 											size='small'>
 											{ getHousesOption() }
-										</Select>
-									</Col>	
+										</XQSelect>
+									</Col>
 								)
 							}
 							{
 								showhsys && (
 									<Col span={7}>
-										<Select style={{width: '100%'}}
+										<XQSelect style={{width: '100%'}}
 											onChange={this.changeSouthChart}
-											value={this.props.fields.southchart.value} 
+											value={this.props.fields.southchart.value}
 											size='small'>
 											<Option value={0}>天文星座</Option>
 											<Option value={1}>涵义星座</Option>
-										</Select>
-									</Col>	
+										</XQSelect>
+									</Col>
 								)
 							}
 							{
 								indiahsys && (
 									<Col span={24}>
-										<Select style={{width:196}}
+										<XQSelect style={{width:196}}
 											onChange={this.changeHsys}
-											value={this.props.fields.hsys.value} 
+											value={this.props.fields.hsys.value}
 											size='small'>
 											<Option value={0}>整宫制</Option>
 											<Option value={5}>Vehlow Equal</Option>
-										</Select>
-									</Col>	
+										</XQSelect>
+									</Col>
 								)
 							}
 							{
@@ -627,11 +627,11 @@ class AstroChartMain extends Component{
 									<Col span={24}>
 										<Row>
 										<Col span={8}>
-											<GeoCoordModal 
+											<GeoCoordModal
 												onOk={this.changeGeo}
 												lat={this.props.fields.gpsLat.value} lng={this.props.fields.gpsLon.value}
 											>
-												<Button size='small' style={{width:'100%'}}>经纬度选择</Button>
+												<XQButton size='small' style={{width:'100%'}}>经纬度选择</XQButton>
 											</GeoCoordModal>
 										</Col>
 										<Col span={16} className="horosa-geo-value">
@@ -642,7 +642,7 @@ class AstroChartMain extends Component{
 								)
 							}
 						</Row>
-						<Tabs defaultActiveKey="1" tabPosition='top' className="horosa-inspector-tabs">
+						<XQTabs defaultActiveKey="1" tabPosition='top' className="horosa-inspector-tabs">
 								<TabPane tab="信息" key="1">
 									<AstroInfo height={tabHeight}
 										value={chartObj} fields={fields}
@@ -652,7 +652,7 @@ class AstroChartMain extends Component{
 									/>
 								</TabPane>
 								<TabPane tab="相位" key="2">
-									<AstroAspect 
+									<AstroAspect
 										value={chartObj} height={tabHeight}
 										lotsDisplay={this.props.lotsDisplay}
 										planetDisplay={this.props.planetDisplay}
@@ -672,7 +672,7 @@ class AstroChartMain extends Component{
 									showlots && (
 										<TabPane tab="希腊点" key="4">
 											<AstroLots value={chartObj} height={tabHeight} showAstroMeaning={this.props.showAstroMeaning}/>
-										</TabPane>	
+										</TabPane>
 									)
 								}
 							<TabPane tab="可能性" key="5">
@@ -682,7 +682,7 @@ class AstroChartMain extends Component{
 									showPlanetHouseInfo={this.props.showPlanetHouseInfo}
 								/>
 							</TabPane>
-						</Tabs>
+						</XQTabs>
 						{this.renderQuickActions()}
 					</div>
 				</div>
