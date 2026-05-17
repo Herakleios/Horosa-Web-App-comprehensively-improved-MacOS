@@ -1,6 +1,6 @@
 import { Component } from 'react';
-import { Row, Col, Divider, InputNumber, Input, Checkbox, message } from 'antd';
-import { XQButton as Button, XQSelect as Select, XQTabs as Tabs } from '../xq-ui';
+import { Row, Col, Divider, Input, Checkbox, message } from 'antd';
+import { XQButton as Button, XQInputNumber as InputNumber, XQSelect as Select, XQTabs as Tabs } from '../xq-ui';
 import * as Constants from '../../utils/constants';
 import request from '../../utils/request';
 import * as AstroConst from '../../constants/AstroConst';

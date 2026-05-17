@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Row, Col, Input, Button } from 'antd';
+import { Row, Col, } from 'antd';
 import { XQTabs as Tabs } from '../xq-ui';
 import DateTime from '../comp/DateTime';
 import AstroPrimaryDirection from '../astro/AstroPrimaryDirection';
