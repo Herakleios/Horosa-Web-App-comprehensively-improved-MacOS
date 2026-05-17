@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Row, Col, Button, Divider, Select, } from 'antd';
+import { Row, Col, Divider } from 'antd';
 import { randomStr, isNumber } from '../../utils/helper';
 import request from '../../utils/request';
 import * as Constants from '../../utils/constants';

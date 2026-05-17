@@ -1,5 +1,6 @@
 import { Component } from 'react';
-import { Row, Col, Button, Divider, Statistic, Select, Input, InputNumber } from 'antd';
+import { Row, Col, Divider, Statistic, Input } from 'antd';
+import { XQButton as Button, XQInputNumber as InputNumber, XQSelect as Select } from '../xq-ui';
 import LatInput from '../astro/LatInput';
 import LonInput from '../astro/LonInput';
 import DateTimeSelector from '../comp/DateTimeSelector';

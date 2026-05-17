@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Row, Col, Divider, Button, } from 'antd';
+import { Row, Col, Divider } from 'antd';
 import FourZhu from './FourZhu';
 import { BaZiMsg } from '../../msg/bazimsg';
 import { randomStr, printArea,} from '../../utils/helper';

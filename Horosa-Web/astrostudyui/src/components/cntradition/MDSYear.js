@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Row, Col, Card, Tabs, Divider, Popover} from 'antd';
+import { Row, Col, Popover} from 'antd';
 import { randomStr } from '../../utils/helper';
 import { BaZiMsg } from '../../msg/bazimsg';
 import DateTime from '../comp/DateTime';

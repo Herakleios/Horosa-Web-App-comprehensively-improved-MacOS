@@ -1,5 +1,6 @@
 import { Component } from 'react';
-import { Row, Col, Form, DatePicker, Input, Button, Select, Checkbox } from 'antd';
+import { Row, Col, Checkbox } from 'antd';
+import { XQButton as Button, XQSelect as Select } from '../xq-ui';
 import GeoCoordModal from '../amap/GeoCoordModal';
 import PlusMinusTime from '../astro/PlusMinusTime';
 import { gcj02ToGps, randomStr } from '../../utils/helper';
@@ -7,7 +8,6 @@ import {convertLatStrToDegree, convertLonStrToDegree, convertLatToStr, convertLo
 import DateTime from '../comp/DateTime';
 
 const {Option} = Select
-const InputGroup = Input.Group;
 
 class CnTraditionInput extends Component{
 	
