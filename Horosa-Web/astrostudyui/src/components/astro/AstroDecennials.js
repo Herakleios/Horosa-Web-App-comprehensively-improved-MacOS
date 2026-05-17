@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Row, Col, Divider, Select, Tree } from 'antd';
+import { Row, Col, Divider, Tree } from 'antd';
 import AstroChart from './AstroChart';
 import * as AstroConst from '../../constants/AstroConst';
 import * as AstroText from '../../constants/AstroText';
@@ -26,6 +26,7 @@ import { saveModuleAISnapshot, } from '../../utils/moduleAiSnapshot';
 import { buildMeaningTipByCategory, } from './AstroMeaningData';
 import { isMeaningEnabled, wrapWithMeaning, } from './AstroMeaningPopover';
 import styles from '../../css/styles.less';
+import { XQSelect as Select } from '../xq-ui';
 
 const { Option } = Select;
 const { TreeNode } = Tree;

@@ -1,6 +1,6 @@
 import { Component } from 'react';
-import { Row, Col, Input } from 'antd';
-import { XQButton as Button, XQTabs as Tabs } from '../xq-ui';
+import { Row, Col, } from 'antd';
+import { XQButton as Button, XQSearch as Search, XQTabs as Tabs } from '../xq-ui';
 import ChartSearchModal from './ChartSearchModal'
 import AstroCompare from '../relative/AstroCompare'
 import AstroComposite from '../relative/AstroComposite'
@@ -14,7 +14,6 @@ import { buildAstroSnapshotContent, } from '../../utils/astroAiSnapshot';
 import { saveModuleAISnapshot, } from '../../utils/moduleAiSnapshot';
 
 const TabPane = Tabs.TabPane;
-const Search = Input.Search;
 
 function msg(id){
 	if(id === undefined || id === null){
