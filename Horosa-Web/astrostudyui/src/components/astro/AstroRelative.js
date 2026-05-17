@@ -1,5 +1,6 @@
 import { Component } from 'react';
-import { Row, Col, Tabs, Input, Button, } from 'antd';
+import { Row, Col, Input } from 'antd';
+import { XQButton as Button, XQTabs as Tabs } from '../xq-ui';
 import ChartSearchModal from './ChartSearchModal'
 import AstroCompare from '../relative/AstroCompare'
 import AstroComposite from '../relative/AstroComposite'

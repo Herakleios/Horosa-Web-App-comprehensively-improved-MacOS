@@ -1,5 +1,6 @@
 import { Component } from 'react';
-import { Row, Col, Button, Divider, Tabs,} from 'antd';
+import { Row, Col, Divider } from 'antd';
+import { XQButton as Button, XQTabs as Tabs } from '../xq-ui';
 import * as Constants from '../../utils/constants';
 import request from '../../utils/request';
 import {randomStr,} from '../../utils/helper';

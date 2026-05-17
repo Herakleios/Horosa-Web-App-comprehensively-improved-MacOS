@@ -1,5 +1,6 @@
 import { Component } from 'react';
-import { Row, Col, Tabs, DatePicker, Input, Button, Card, Select } from 'antd';
+import { Row, Col, DatePicker, Input, Button, Card, Select } from 'antd';
+import { XQTabs as Tabs } from '../xq-ui';
 import CnTraditionInput from './CnTraditionInput';
 import * as Constants from '../../utils/constants';
 import request from '../../utils/request';

@@ -1,5 +1,6 @@
 import { Component } from 'react';
-import { Row, Col, Tabs, Input, Button, DatePicker, Card, Select } from 'antd';
+import { Row, Col, Input, DatePicker } from 'antd';
+import { XQButton as Button, XQCard as Card, XQSelect as Select, XQTabs as Tabs } from '../xq-ui';
 import AstroChartMain from '../astro/AstroChartMain';
 import GeoCoordModal from '../amap/GeoCoordModal';
 import SuZhanMain from '../suzhan/SuZhanMain';
