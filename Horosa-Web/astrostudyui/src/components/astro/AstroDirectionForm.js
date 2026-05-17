@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEffect } from 'react';
-import { Form, Button, Select, Input, Row, Col,   } from 'antd';
+import { Form, Row, Col,   } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { preventEnterPress } from '../../utils/helper';
 import LatInput from './LatInput';
@@ -9,6 +9,7 @@ import PlusMinusTime from './PlusMinusTime';
 import GeoCoordModal from '../amap/GeoCoordModal';
 import * as AstroHelper from '../astro/AstroHelper';
 import DateTime from '../comp/DateTime';
+import { XQButton as Button, XQInput as Input, XQSelect as Select } from '../xq-ui';
 
 export default function AstroDirectionForm(props){
 	let [form] = Form.useForm();
@@ -217,5 +218,4 @@ export default function AstroDirectionForm(props){
     
 
 }
-
 

@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Row, Col, Table, Input, Button, Select,  } from 'antd';
+import { Row, Col } from 'antd';
 import { SearchOutlined, } from '@ant-design/icons';
 import * as AstroConst from '../../constants/AstroConst';
 import * as AstroText from '../../constants/AstroText';
@@ -9,6 +9,7 @@ import { buildMeaningTipByCategory, } from './AstroMeaningData';
 import { isMeaningEnabled, wrapWithMeaning, } from './AstroMeaningPopover';
 import {TableOddRowBgColor} from '../../utils/constants'
 import styles from '../../css/styles.less';
+import { XQButton as Button, XQInput as Input, XQSelect as Select, XQTable as Table } from '../xq-ui';
 
 const Option = Select.Option;
 const PD_SYNC_REV = 'pd_method_sync_v8';

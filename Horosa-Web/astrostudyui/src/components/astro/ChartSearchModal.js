@@ -1,11 +1,11 @@
 import { Component } from 'react';
-import { Modal, Button, Input, Table, } from 'antd';
 import { SearchOutlined, } from '@ant-design/icons';
 import * as AstroText from '../../constants/AstroText';
 import * as Constants from '../../utils/constants';
 import request from '../../utils/request';
 import { TableOddRowBgColor } from '../../utils/constants';
 import { listLocalCharts } from '../../utils/localcharts';
+import { XQButton as Button, XQInput as Input, XQModal as Modal, XQTable as Table } from '../xq-ui';
 
 
 class ChartSearchModal extends Component{
