@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Card, Drawer, Input, Modal, Radio, Select, Tabs, Tooltip } from 'antd';
+import { Button, Card, DatePicker, Drawer, Input, InputNumber, Modal, Radio, Select, Tabs, Tooltip } from 'antd';
 import XQIcon from '../xq-icons';
 
 export function XQButton({children, iconName, className = '', variant = 'default', ...rest}){
@@ -139,6 +139,25 @@ export function XQInput({className = '', ...rest}){
 		<Input
 			{...rest}
 			className={`xq-input ${className}`.trim()}
+		/>
+	);
+}
+
+export function XQInputNumber({className = '', ...rest}){
+	return (
+		<InputNumber
+			{...rest}
+			className={`xq-input-number ${className}`.trim()}
+		/>
+	);
+}
+
+export function XQDatePicker({className = '', popupClassName = '', ...rest}){
+	return (
+		<DatePicker
+			{...rest}
+			className={`xq-date-picker ${className}`.trim()}
+			popupClassName={`xq-date-picker-popup ${popupClassName}`.trim()}
 		/>
 	);
 }

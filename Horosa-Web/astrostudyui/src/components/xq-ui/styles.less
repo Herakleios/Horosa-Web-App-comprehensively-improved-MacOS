@@ -296,7 +296,9 @@
     }
 
     .xq-input.ant-input,
-    .xq-input.ant-input-affix-wrapper {
+    .xq-input.ant-input-affix-wrapper,
+    .xq-input-number.ant-input-number,
+    .xq-date-picker.ant-picker {
         min-height: var(--horosa-control-height);
         border-color: var(--horosa-border);
         border-radius: 8px;
@@ -308,15 +310,50 @@
         transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
     }
 
+    .xq-input-number.ant-input-number {
+        width: 100%;
+    }
+
+    .xq-input-number .ant-input-number-input,
+    .xq-date-picker .ant-picker-input > input {
+        color: var(--horosa-text);
+    }
+
+    .xq-input-number .ant-input-number-handler-wrap {
+        border-color: var(--horosa-border);
+        background: var(--horosa-panel-bg);
+    }
+
+    .xq-input-number .ant-input-number-handler {
+        border-color: var(--horosa-border);
+        color: var(--horosa-text-soft);
+    }
+
+    .xq-date-picker .ant-picker-suffix,
+    .xq-date-picker .ant-picker-clear {
+        color: var(--horosa-muted);
+    }
+
     .xq-input.ant-input:hover,
     .xq-input.ant-input:focus,
     .xq-input.ant-input-affix-wrapper:hover,
-    .xq-input.ant-input-affix-wrapper-focused {
+    .xq-input.ant-input-affix-wrapper-focused,
+    .xq-input-number.ant-input-number:hover,
+    .xq-input-number.ant-input-number-focused,
+    .xq-date-picker.ant-picker:hover,
+    .xq-date-picker.ant-picker-focused {
         border-color: var(--horosa-accent);
         background:
             linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent),
             var(--horosa-panel-bg);
         box-shadow: 0 0 0 3px var(--horosa-cyan-soft), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+
+    .xq-date-picker-popup .ant-picker-panel-container {
+        border: 1px solid var(--horosa-border);
+        border-radius: var(--horosa-radius);
+        background: var(--horosa-surface-raised);
+        box-shadow: var(--horosa-shadow);
     }
 
     .xq-modal .ant-modal-content {

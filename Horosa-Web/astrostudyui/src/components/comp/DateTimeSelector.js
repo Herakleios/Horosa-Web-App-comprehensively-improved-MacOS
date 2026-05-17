@@ -1,6 +1,7 @@
 import { Component } from 'react';
-import { Select, Input, Button, InputNumber, Row, Col } from 'antd';
+import { Row, Col } from 'antd';
 import { PlusOutlined, MinusOutlined, } from '@ant-design/icons';
+import { XQButton as Button, XQInputNumber as InputNumber, XQSelect as Select } from '../xq-ui';
 import { randomStr } from '../../utils/helper';
 import DateTime from './DateTime';
 
