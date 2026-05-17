@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Tabs, } from 'antd';
+import { XQTabs as Tabs } from '../xq-ui';
 import { randomStr } from '../../utils/helper';
 import GuaSymDesc from '../gua/GuaSymDesc';
 import CuanGong12 from '../commtools/CuanGong12';
