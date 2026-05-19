@@ -85,6 +85,10 @@ function newEmptyFields(){
 			value: 0,
 			name: ['doubingSu28'],
 		},
+		guolaoLifeMode: {
+			value: 'asc',
+			name: ['guolaoLifeMode'],
+		},
 		houseStartMode: {
 			value: 0,
 			name: ['houseStartMode'],
@@ -199,6 +203,7 @@ function fieldsToParams(fields){
 		zodiacal: fields.zodiacal.value,
 		tradition: fields.tradition.value,
 		doubingSu28: fields.doubingSu28.value,
+		guolaoLifeMode: fields.guolaoLifeMode ? fields.guolaoLifeMode.value : 'asc',
 		strongRecption: fields.strongRecption.value,
 		simpleAsp: fields.simpleAsp.value,
 		virtualPointReceiveAsp: fields.virtualPointReceiveAsp.value,
@@ -472,6 +477,10 @@ export default {
 			doubingSu28: {
 				value: 0,
 				name: ['doubingSu28'],
+			},
+			guolaoLifeMode: {
+				value: 'asc',
+				name: ['guolaoLifeMode'],
 			},
 			houseStartMode: {
 				value: 0,

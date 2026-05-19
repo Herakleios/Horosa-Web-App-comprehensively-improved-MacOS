@@ -316,14 +316,17 @@ function AstroIndex({dispatch, astro, app, user, rules, }){
         admin ? [{ label: '管理工具', key: 'admintools', icon: 'admin', group: '管理' }] : []
     );
 
+    const isFullHeightWorkspaceTab = currentTab === 'astrochart' || currentTab === 'bazi' || currentTab === 'guolao';
+    const rootTabsHeight = isFullHeightWorkspaceTab ? 'calc(100vh - 74px)' : height;
+
 	return (
 		<div style={idxstyle}>
         <Spin spinning={loading} size="large" tip={tip}>
             <XQTabs
                 defaultActiveKey="astrochart" tabPosition='left' onChange={changeTab}
                 activeKey={currentTab}
-                className={`mainRootTabs horosa-nav-in-drawer horosa-unified-shell-active${currentTab === 'astrochart' ? ' horosa-astro-shell-active' : ''}`}
-                style={{ height: height }}
+                className={`mainRootTabs horosa-nav-in-drawer horosa-unified-shell-active${isFullHeightWorkspaceTab ? ' horosa-astro-shell-active' : ''}${currentTab === 'bazi' ? ' horosa-bazi-shell-active' : ''}`}
+                style={{ height: rootTabsHeight }}
             >
                 <TabPane tab={mainTab('占星', '命')} key="astrochart">
 	                    <AstroChartMain 

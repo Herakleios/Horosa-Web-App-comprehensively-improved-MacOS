@@ -97,7 +97,7 @@ class WebChartSrv:
                     'zone': data['zone'],
                     'tradition': perchart.tradition,
                     'zodiacal': perchart.zodiacal,
-                    'doubingSu28': perchart.isDoubingSu28,
+                    'doubingSu28': perchart.su28Mode,
                     'showPdBounds': data.get('showPdBounds', 1),
                     'pdtype': perchart.pdtype,
                     'pdMethod': perchart.pdMethod,

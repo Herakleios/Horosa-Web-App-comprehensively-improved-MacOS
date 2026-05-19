@@ -39,6 +39,7 @@ class LiuRengChart extends Component{
 		this.rengchart = new RengChart(opt);
 
 		this.drawChart = this.drawChart.bind(this);
+		this.safeDrawChart = this.safeDrawChart.bind(this);
 		this.handleResize = this.handleResize.bind(this);
 		this.setupToolTip = this.setupToolTip.bind(this);
 	}
@@ -74,7 +75,7 @@ class LiuRengChart extends Component{
 			ox: orgx,
 			oy: orgy,
 			radius: chartR,
-		});
+		}, this.safeDrawChart);
 	}
 
 	drawChart(){
@@ -98,12 +99,35 @@ class LiuRengChart extends Component{
 		this.rengchart.draw();
 	}
 
+	safeDrawChart(){
+		try{
+			this.drawChart();
+		}catch(e){
+			if(typeof console !== 'undefined' && console.error){
+				console.error('[LiuRengChart] draw failed', e);
+			}
+		}
+	}
+
 	componentDidMount(){
 		window.addEventListener('resize', this.handleResize)
 		d3.select('body').append('div').attr('id', this.state.tooltipId);
 		const tip = d3.select('#' + this.state.tooltipId);
 		this.setupToolTip(tip);
-		this.drawChart();
+		this.safeDrawChart();
+	}
+
+	componentDidUpdate(prevProps){
+		if(prevProps.value !== this.props.value
+			|| prevProps.liureng !== this.props.liureng
+			|| prevProps.runyear !== this.props.runyear
+			|| prevProps.gender !== this.props.gender
+			|| prevProps.zhangshengElem !== this.props.zhangshengElem
+			|| prevProps.guireng !== this.props.guireng
+			|| prevProps.panStyleName !== this.props.panStyleName
+			|| prevProps.chartType !== this.props.chartType){
+			this.safeDrawChart();
+		}
 	}
 
 	componentWillUnmount() {
@@ -134,14 +158,13 @@ class LiuRengChart extends Component{
 		let chartstyle = {
 			width: this.props.width ? this.props.width : '100%',
 			height: this.props.height ? this.props.height : '100%',
-			backgroundColor: AstroConst.AstroColor.ChartBackgroud,
+			backgroundColor: 'var(--horosa-astro-panel, #090b0e)',
 		};
 
 		if(this.props.style){
 			chartstyle = this.props.style;
 		}
 
-		this.drawChart();
 		const metaDialog = this.state.metaDialog;
 		const metaRows = metaDialog && Array.isArray(metaDialog.gods) ? metaDialog.gods : [];
 

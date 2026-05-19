@@ -26,6 +26,46 @@ function isBranch(value){
 	return LRConst.ZiList.indexOf(value) >= 0;
 }
 
+function getStemColor(value){
+	const stem = `${value || ''}`.substr(0, 1);
+	if(stem === '甲' || stem === '乙'){
+		return 'var(--horosa-liureng-stem-wood, #73b36b)';
+	}
+	if(stem === '丙' || stem === '丁'){
+		return 'var(--horosa-liureng-stem-fire, #c9483e)';
+	}
+	if(stem === '戊' || stem === '己'){
+		return 'var(--horosa-liureng-stem-earth, #c19a57)';
+	}
+	if(stem === '庚' || stem === '辛'){
+		return 'var(--horosa-liureng-stem-metal, #d8d2c7)';
+	}
+	if(stem === '壬' || stem === '癸'){
+		return 'var(--horosa-liureng-stem-water, #8f9694)';
+	}
+	return 'var(--horosa-liureng-square-main, #f0eee7)';
+}
+
+function getBranchColor(value){
+	const branch = `${value || ''}`.substr(0, 1);
+	if(branch === '寅' || branch === '卯'){
+		return 'var(--horosa-liureng-stem-wood, #73b36b)';
+	}
+	if(branch === '巳' || branch === '午'){
+		return 'var(--horosa-liureng-stem-fire, #c9483e)';
+	}
+	if(branch === '辰' || branch === '戌' || branch === '丑' || branch === '未'){
+		return 'var(--horosa-liureng-stem-earth, #c19a57)';
+	}
+	if(branch === '申' || branch === '酉'){
+		return 'var(--horosa-liureng-stem-metal, #d8d2c7)';
+	}
+	if(branch === '亥' || branch === '子'){
+		return 'var(--horosa-liureng-stem-water, #8f9694)';
+	}
+	return 'var(--horosa-liureng-square-main, #f0eee7)';
+}
+
 class RengChart {
 	constructor(options){
 		this.chartId = options.id;
@@ -91,8 +131,8 @@ class RengChart {
 			return null;
 		}
 
-		let realW = width - this.margin * 2;
-		let realH = height - this.margin * 2;
+		let realW = width;
+		let realH = height;
 
 		this.hasDrawGua = false;
 		let svgid = '#' + this.chartId;
@@ -104,20 +144,19 @@ class RengChart {
 		this.svgTopgroup.append('rect')
 			.attr('fill', this.bgColor)
 			.attr('stroke', this.color)
-			.attr('x', this.margin)
-			.attr('y', this.margin)
+			.attr('x', 0)
+			.attr('y', 0)
 			.attr('width', realW).attr('height', realH);
 
-			let titleH = 0;
-			let metaH = Math.min(58, Math.max(46, realH * 0.10));
-			let h = realH - titleH - metaH;
-			let cords = [];
-			cords[0] = {x: this.margin, y: this.margin+titleH, w: realW, h: h};
-			cords[2] = {x: this.margin, y: this.margin+titleH+h, w: realW, h: metaH};
+		let titleH = this.liureng ? Math.min(210, Math.max(128, realH * 0.34)) : 0;
+		let h = realH - titleH;
+		let cords = [];
+		cords[0] = {x: 0, y: titleH, w: realW, h: h};
+		cords[1] = {x: 0, y: 0, w: realW, h: titleH};
 
-			this.prepareLiuRengBase(cords[0]);
-			this.drawSimpleBody(cords[0]);
-			this.drawGua3(cords[2]);
+		this.drawLiuRengInfoHeader(cords[1]);
+		this.prepareLiuRengBase(cords[0]);
+		this.drawSimpleBody(cords[0]);
 		}
 
 	prepareLiuRengBase(cord){
@@ -154,6 +193,165 @@ class RengChart {
 
 	}
 
+	formatSolarTime(){
+		const fields = this.fields || {};
+		if(fields.date && fields.date.value && fields.time && fields.time.value){
+			const dateText = `${fields.date.value.format ? fields.date.value.format('YYYY-MM-DD HH:mm:ss') : fields.date.value}`;
+			const timeText = `${fields.time.value.format ? fields.time.value.format('YYYY-MM-DD HH:mm:ss') : fields.time.value}`;
+			const dateMatch = dateText.match(/(-?\d{1,4})-(\d{1,2})-(\d{1,2})/);
+			const timeMatch = timeText.match(/(\d{1,2}):(\d{1,2})/);
+			if(dateMatch){
+				return `${dateMatch[1]}年${dateMatch[2].padStart(2, '0')}月${dateMatch[3].padStart(2, '0')}日 ${timeMatch ? timeMatch[1].padStart(2, '0') : '00'}:${timeMatch ? timeMatch[2].padStart(2, '0') : '00'}`;
+			}
+		}
+		if(fields.params && fields.params.birth){
+			const match = `${fields.params.birth}`.match(/(-?\d{1,4})-(\d{1,2})-(\d{1,2}).*?(\d{1,2}):(\d{1,2})/);
+			if(match){
+				return `${match[1]}年${match[2].padStart(2, '0')}月${match[3].padStart(2, '0')}日 ${match[4].padStart(2, '0')}:${match[5].padStart(2, '0')}`;
+			}
+			return `${fields.params.birth}`.substr(0, 16);
+		}
+		if(this.nongli && this.nongli.birth){
+			const match = `${this.nongli.birth}`.match(/(-?\d{1,4})-(\d{1,2})-(\d{1,2}).*?(\d{1,2}):(\d{1,2})/);
+			if(match){
+				return `${match[1]}年${match[2].padStart(2, '0')}月${match[3].padStart(2, '0')}日 ${match[4].padStart(2, '0')}:${match[5].padStart(2, '0')}`;
+			}
+			return `${this.nongli.birth}`.substr(0, 16);
+		}
+		return '';
+	}
+
+	getFourPillars(){
+		const cols = this.liureng && this.liureng.fourColumns ? this.liureng.fourColumns : {};
+		const nongli = this.nongli || {};
+		return [{
+			label: '年',
+			value: cols.year && cols.year.ganzi ? cols.year.ganzi : (nongli.yearGanZi || nongli.yearJieqi || nongli.year || ''),
+		}, {
+			label: '月',
+			value: cols.month && cols.month.ganzi ? cols.month.ganzi : (nongli.monthGanZi || ''),
+		}, {
+			label: '日',
+			value: cols.day && cols.day.ganzi ? cols.day.ganzi : (nongli.dayGanZi || ''),
+		}, {
+			label: '时',
+			value: cols.time && cols.time.ganzi ? cols.time.ganzi : (nongli.time || ''),
+		}];
+	}
+
+	drawInfoText(group, text, x, y, options = {}){
+		return group.append('text')
+			.attr('x', x)
+			.attr('y', y)
+			.attr('text-anchor', options.anchor || 'start')
+			.attr('dominant-baseline', options.baseline || 'middle')
+			.attr('fill', options.fill || 'var(--horosa-liureng-square-main, #f0eee7)')
+			.attr('stroke', 'none')
+			.attr('font-size', options.size || 18)
+			.attr('font-weight', options.weight || 650)
+			.attr('font-family', options.family || '"Songti SC", "STSong", "Noto Serif CJK SC", serif')
+			.text(text || '');
+	}
+
+	drawInfoPair(group, label, value, x, y, options = {}){
+		const text = group.append('text')
+			.attr('x', x)
+			.attr('y', y)
+			.attr('text-anchor', options.anchor || 'end')
+			.attr('dominant-baseline', 'middle')
+			.attr('fill', options.fill || 'var(--horosa-liureng-square-main, #f0eee7)')
+			.attr('stroke', 'none')
+			.attr('font-size', options.size || 18)
+			.attr('font-weight', options.weight || 760)
+			.attr('font-family', options.family || '"Songti SC", "STSong", "Noto Serif CJK SC", serif');
+		text.append('tspan')
+			.attr('fill', options.labelFill || 'var(--horosa-liureng-square-main, #f0eee7)')
+			.text(label || '');
+		text.append('tspan')
+			.attr('fill', options.valueFill || 'var(--horosa-liureng-square-muted, #8f9694)')
+			.text(value || '—');
+		return text;
+	}
+
+	drawFourPillar(group, pillar, x, y, fontSize){
+		const value = `${pillar.value || ''}`;
+		const gan = value.substr(0, 1);
+		const zhi = value.substr(1, 1);
+		const labelX = x + fontSize * 0.98;
+		this.drawInfoText(group, gan, x, y, {
+			fill: getStemColor(gan),
+			size: fontSize,
+			weight: 760,
+			anchor: 'middle',
+		});
+		this.drawInfoText(group, zhi, x, y + fontSize * 1.12, {
+			fill: getBranchColor(zhi),
+			size: fontSize,
+			weight: 760,
+			anchor: 'middle',
+		});
+		this.drawInfoText(group, pillar.label, labelX, y + fontSize * 0.56, {
+			fill: 'var(--horosa-liureng-square-muted, #8f9694)',
+			size: Math.max(12, fontSize * 0.48),
+			weight: 650,
+			anchor: 'middle',
+		});
+	}
+
+	drawLiuRengInfoHeader(cord){
+		if(!cord || cord.h <= 0 || !this.liureng){
+			return;
+		}
+		const group = this.svgTopgroup.append('g').attr('class', 'liureng-info-header');
+		const padX = Math.max(18, cord.w * 0.05);
+		const topY = cord.y + Math.max(46, cord.h * 0.34);
+		const pillarY = cord.y + Math.max(100, cord.h * 0.68);
+		const dividerY = cord.y + cord.h - Math.max(8, cord.h * 0.08);
+		const timeSize = Math.max(20, Math.min(38, cord.w * 0.052));
+		const pillarSize = Math.max(22, Math.min(34, cord.w * 0.045));
+		const rightSize = Math.max(20, Math.min(36, cord.w * 0.048));
+		const rightX = cord.x + cord.w - padX;
+		const solarTime = this.formatSolarTime();
+		const xun = this.liureng && this.liureng.xun ? this.liureng.xun : {};
+		const yue = this.yue || '';
+		const xunKong = xun['旬空'] || '';
+		const xunHead = xun['旬首'] || '';
+		const pillars = this.getFourPillars();
+		const pillarStartX = cord.x + padX + pillarSize * 0.1;
+		const pillarGap = Math.max(pillarSize * 2.15, Math.min(96, cord.w * 0.12));
+
+		this.drawInfoText(group, solarTime, cord.x + padX, topY, {
+			fill: 'var(--horosa-liureng-square-main, #f0eee7)',
+			size: timeSize,
+			weight: 760,
+		});
+		this.drawInfoPair(group, '月将-', yue || '—', rightX, topY, {
+			size: rightSize,
+			weight: 760,
+		});
+
+		pillars.forEach((pillar, idx)=>{
+			this.drawFourPillar(group, pillar, pillarStartX + idx * pillarGap, pillarY, pillarSize);
+		});
+
+		this.drawInfoPair(group, '旬空-', xunKong || '—', rightX, pillarY - pillarSize * 0.12, {
+			size: rightSize * 0.82,
+			weight: 760,
+		});
+		this.drawInfoPair(group, '旬首-', xunHead || '—', rightX, pillarY + pillarSize * 1.02, {
+			size: rightSize * 0.82,
+			weight: 760,
+		});
+
+		group.append('line')
+			.attr('x1', cord.x + padX)
+			.attr('x2', cord.x + cord.w - padX)
+			.attr('y1', dividerY)
+			.attr('y2', dividerY)
+			.attr('stroke', 'var(--horosa-liureng-square-line, rgba(231, 189, 117, 0.18))')
+			.attr('stroke-width', 1);
+	}
+
 	getShortJiang(name){
 		const map = {
 			'贵人': '贵',
@@ -185,18 +383,45 @@ class RengChart {
 	}
 
 	drawSimpleText(group, text, x, y, options = {}){
+		const anchor = options.anchor || 'middle';
 		const node = group.append('text')
 			.attr('x', x)
 			.attr('y', y)
-			.attr('text-anchor', options.anchor || 'middle')
+			.attr('text-anchor', anchor)
 			.attr('dominant-baseline', 'middle')
 			.attr('fill', options.fill || 'var(--horosa-liureng-square-main, #f0eee7)')
 			.attr('font-size', options.size || 18)
 			.attr('font-weight', options.weight || 520)
 			.attr('font-family', options.family || '"Songti SC", "STSong", "Noto Serif CJK SC", serif')
 			.text(text || '');
+		if(anchor === 'middle' && options.visualAlign !== false){
+			this.alignTextVisualCenter(node, x);
+		}
 		this.bindSimpleTip(node, options);
 		return node;
+	}
+
+	alignTextVisualCenter(node, targetX){
+		if(!node || !node.node){
+			return;
+		}
+		const textNode = node.node();
+		if(!textNode || !textNode.getBBox){
+			return;
+		}
+		try{
+			const bbox = textNode.getBBox();
+			if(!bbox || !Number.isFinite(bbox.x) || !Number.isFinite(bbox.width)){
+				return;
+			}
+			const visualCenter = bbox.x + bbox.width / 2;
+			const offset = targetX - visualCenter;
+			if(Math.abs(offset) > 0.01){
+				node.attr('x', targetX + offset);
+			}
+		}catch(e){
+			// Some headless or hidden SVG states cannot measure text boxes; default SVG anchoring is the fallback.
+		}
 	}
 
 	bindSimpleTip(target, options = {}){
@@ -241,30 +466,50 @@ class RengChart {
 			divTooltip: this.tooltipId ? d3.select(`#${this.tooltipId}`) : null,
 		};
 		const csvg = new ChuangChart(opt1);
-		csvg.genCuangs();
+		try{
+			csvg.genCuangs();
+		}catch(e){
+			if(typeof console !== 'undefined' && console.warn){
+				console.warn('[RengChart] failed to generate san chuan', e);
+			}
+		}
+		if(!csvg.cuangs){
+			csvg.cuangs = {
+				name: '',
+				tianJiang: [],
+				liuQin: [],
+				cuang: [],
+			};
+		}
 		this.rengs[2] = csvg;
 		if(chart){
 			chart.cuangName = csvg.cuangs && csvg.cuangs.name ? csvg.cuangs.name : '';
 		}
 
 		const group = this.svgTopgroup.append('g').attr('class', 'liureng-simple-body');
+		const padX = Math.max(34, cord.w * 0.055);
+		const padTop = Math.max(26, cord.h * 0.055);
+		const padBottom = Math.max(34, cord.h * 0.075);
+		const bodyY = cord.y + padTop;
+		const bodyH = Math.max(0, cord.h - padTop - padBottom);
+		const splitX = cord.x + cord.w * 0.43;
 		const left = {
-			x: cord.x + 18,
-			y: cord.y + 18,
-			w: cord.w * 0.44 - 24,
-			h: cord.h - 36,
+			x: cord.x + padX,
+			y: bodyY,
+			w: splitX - cord.x - padX * 0.9,
+			h: bodyH,
 		};
 		const right = {
-			x: cord.x + cord.w * 0.45,
-			y: cord.y + 18,
-			w: cord.w * 0.53 - 18,
-			h: cord.h - 36,
+			x: splitX + Math.max(18, cord.w * 0.018),
+			y: bodyY,
+			w: cord.x + cord.w - splitX - padX,
+			h: bodyH,
 		};
 		this.drawSimpleTextPan(group, left, chart);
 		this.drawSimpleKeChuan(group, right, csvg);
 		this.drawCirclePreviewButton(group, {
 			x: cord.x + cord.w - 92,
-			y: cord.y + 12,
+			y: cord.y + Math.max(12, cord.h * 0.02),
 			w: 70,
 			h: 30,
 		});
@@ -297,13 +542,14 @@ class RengChart {
 		const main = 'var(--horosa-liureng-square-main, #f0eee7)';
 		const muted = 'var(--horosa-liureng-square-muted, #8f9694)';
 		const size = Math.min(cord.w, cord.h);
-		const branchSize = Math.max(18, size * 0.088);
-		const jiangSize = Math.max(16, size * 0.080);
-		const ganSize = Math.max(15, size * 0.073);
-		const rowGap = Math.max(branchSize * 1.35, size * 0.138);
-		const colGap = Math.max(branchSize * 1.28, cord.w * 0.074);
-		const centerX = cord.x + cord.w * 0.54;
-		const topY = cord.y + cord.h * 0.16;
+		const branchSize = Math.max(18, Math.min(42, size * 0.096));
+		const jiangSize = Math.max(16, Math.min(34, size * 0.084));
+		const ganSize = Math.max(15, Math.min(30, size * 0.074));
+		const rowGap = Math.max(branchSize * 1.28, Math.min(54, size * 0.136));
+		const colGap = Math.max(branchSize * 1.38, Math.min(54, cord.w * 0.15));
+		const centerX = cord.x + cord.w * 0.50;
+		const panHeight = rowGap * 7.75;
+		const topY = cord.y + Math.max(rowGap * 0.55, (cord.h - panHeight) / 2 + rowGap * 0.72);
 		const branches = LRConst.ZiList;
 		const house = branches.reduce((acc, branch)=>{
 			acc[branch] = this.getSimpleHouse(chart, branch);
@@ -325,10 +571,10 @@ class RengChart {
 		drawRow(['巳', '午', '未', '申'], topY + rowGap, 'gan', muted, ganSize, 560);
 		drawRow(['巳', '午', '未', '申'], topY + rowGap * 2, 'up', main, branchSize, 760);
 
-		const middleY = topY + rowGap * 3.28;
+			const middleY = topY + rowGap * 3.18;
 		[
-			{ branch: '辰', x: centerX - colGap * 2.24, y: middleY },
-			{ branch: '卯', x: centerX - colGap * 2.24, y: middleY + rowGap },
+				{ branch: '辰', x: centerX - colGap * 2.18, y: middleY },
+				{ branch: '卯', x: centerX - colGap * 2.18, y: middleY + rowGap },
 		].forEach((item)=>{
 			const data = house[item.branch] || {};
 			this.drawSimpleText(panGroup, data.jiang, item.x - colGap * 0.74, item.y, { fill: gold, size: jiangSize, weight: 760, houseIndex: data.idx });
@@ -336,8 +582,8 @@ class RengChart {
 			this.drawSimpleText(panGroup, data.up, item.x + colGap * 0.74, item.y, { fill: main, size: branchSize, weight: 760, branch: data.up });
 		});
 		[
-			{ branch: '酉', x: centerX + colGap * 2.24, y: middleY },
-			{ branch: '戌', x: centerX + colGap * 2.24, y: middleY + rowGap },
+				{ branch: '酉', x: centerX + colGap * 2.18, y: middleY },
+				{ branch: '戌', x: centerX + colGap * 2.18, y: middleY + rowGap },
 		].forEach((item)=>{
 			const data = house[item.branch] || {};
 			this.drawSimpleText(panGroup, data.up, item.x - colGap * 0.74, item.y, { fill: main, size: branchSize, weight: 760, branch: data.up });
@@ -345,7 +591,7 @@ class RengChart {
 			this.drawSimpleText(panGroup, data.jiang, item.x + colGap * 0.74, item.y, { fill: gold, size: jiangSize, weight: 760, houseIndex: data.idx });
 		});
 
-		const bottomY = topY + rowGap * 5.7;
+			const bottomY = topY + rowGap * 5.58;
 		drawRow(['寅', '丑', '子', '亥'], bottomY, 'up', main, branchSize, 760);
 		drawRow(['寅', '丑', '子', '亥'], bottomY + rowGap, 'gan', muted, ganSize, 560);
 		drawRow(['寅', '丑', '子', '亥'], bottomY + rowGap * 2, 'jiang', gold, jiangSize, 760);
@@ -384,16 +630,17 @@ class RengChart {
 		const main = 'var(--horosa-liureng-square-main, #f0eee7)';
 		const muted = 'var(--horosa-liureng-square-muted, #8f9694)';
 		const size = Math.min(cord.w, cord.h);
-		const big = Math.max(19, size * 0.096);
-		const small = Math.max(13, size * 0.064);
+		const big = Math.max(22, Math.min(52, size * 0.112));
+		const small = Math.max(14, Math.min(30, size * 0.058));
 		const keOrder = [3, 2, 1, 0];
-		const keX = cord.x + cord.w * 0.02;
-		const keY = cord.y + cord.h * 0.26;
-		const keGap = Math.max(big * 1.16, cord.h * 0.13);
-		const tokenGap = big * 0.92;
+		const keList = Array.isArray(this.ke) ? this.ke : [];
+		const keX = cord.x + cord.w * 0.03;
+		const keY = cord.y + cord.h * 0.34;
+		const keGap = Math.max(big * 1.22, Math.min(82, cord.h * 0.145));
+		const tokenGap = big * 1.06;
 		const drawKeTokenRow = (rowIdx, y)=>{
 			keOrder.forEach((keIdx, tokenIdx)=>{
-				const ke = this.ke[keIdx] || [];
+				const ke = keList[keIdx] || [];
 				let text = '';
 				let options = {};
 				if(rowIdx === 0){
@@ -422,42 +669,46 @@ class RengChart {
 			drawKeTokenRow(idx, keY + idx * keGap);
 		});
 
-		const cuangs = csvg && csvg.cuangs ? csvg.cuangs : {};
-		const startX = cord.x + cord.w * 0.60;
-		const startY = keY;
-		const rowGap = keGap;
-		const chuanGanX = startX + Math.max(big * 1.02, cord.w * 0.058);
-		const chuanBranchX = startX + Math.max(big * 1.78, cord.w * 0.118);
-		const chuanJiangX = startX + Math.max(big * 2.58, cord.w * 0.176);
-		for(let i=0; i<3; i++){
-			const y = startY + i * rowGap;
-			const liuqin = cuangs.liuQin && cuangs.liuQin[i] ? `${cuangs.liuQin[i]}`.substr(0, 1) : '';
-			const chuanText = cuangs.cuang && cuangs.cuang[i] ? cuangs.cuang[i] : '';
-			const parsedChuan = this.parseChuanGanZi(chuanText);
-			this.drawSimpleText(rightGroup, liuqin, startX, y, {
-				anchor: 'start',
-				fill: muted,
-					size: small,
-					weight: 620,
+			const cuangs = csvg && csvg.cuangs ? csvg.cuangs : {};
+			const liuQin = Array.isArray(cuangs.liuQin) ? cuangs.liuQin : [];
+			const chuan = Array.isArray(cuangs.cuang) ? cuangs.cuang : [];
+			const tianJiang = Array.isArray(cuangs.tianJiang) ? cuangs.tianJiang : [];
+			const startX = cord.x + cord.w * 0.61;
+			const startY = keY;
+			const rowGap = keGap;
+			const chuanAuxSize = big * 0.78;
+			const chuanGanX = startX + Math.max(big * 1.02, cord.w * 0.060);
+			const chuanBranchX = startX + Math.max(big * 1.86, cord.w * 0.124);
+			const chuanJiangX = startX + Math.max(big * 2.72, cord.w * 0.190) + big * 0.52;
+			for(let i=0; i<3; i++){
+				const y = startY + i * rowGap;
+				const liuqin = liuQin[i] ? `${liuQin[i]}`.substr(0, 1) : '';
+				const chuanText = chuan[i] ? chuan[i] : '';
+				const parsedChuan = this.parseChuanGanZi(chuanText);
+				this.drawSimpleText(rightGroup, liuqin, startX, y, {
+					anchor: 'middle',
+					fill: muted,
+					size: chuanAuxSize,
+					weight: 560,
 				});
-			this.drawSimpleText(rightGroup, parsedChuan.gan, chuanGanX, y, {
-				anchor: 'middle',
-				fill: muted,
-				size: big * 0.78,
-				weight: 560,
-			});
+				this.drawSimpleText(rightGroup, parsedChuan.gan, chuanGanX, y, {
+					anchor: 'middle',
+					fill: muted,
+					size: chuanAuxSize,
+					weight: 560,
+				});
 			this.drawSimpleText(rightGroup, parsedChuan.branch, chuanBranchX, y, {
 				anchor: 'middle',
 				fill: main,
 				size: big,
 				weight: 760,
 				branch: parsedChuan.branch,
-			});
-			this.drawSimpleText(rightGroup, this.getShortJiang(cuangs.tianJiang && cuangs.tianJiang[i] ? cuangs.tianJiang[i] : ''), chuanJiangX, y, {
-				anchor: 'start',
-				fill: gold,
-				size: big,
-				weight: 760,
+				});
+				this.drawSimpleText(rightGroup, this.getShortJiang(tianJiang[i] ? tianJiang[i] : ''), chuanJiangX, y, {
+					anchor: 'middle',
+					fill: gold,
+					size: big,
+					weight: 760,
 				houseIndex: this.getHouseIndexByUpBranch(chuanText),
 			});
 		}

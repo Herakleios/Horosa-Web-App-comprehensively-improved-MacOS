@@ -8,7 +8,7 @@ const GAN_CHONG = [
 	['甲', '庚'], ['乙', '辛'], ['丙', '壬'], ['丁', '癸'],
 ];
 const ZHI_LIUHE = [
-	['子', '丑', '土'], ['寅', '亥', '木'], ['卯', '戌', '火'], ['辰', '酉', '金'], ['巳', '申', '水'], ['午', '未', '土'],
+	['子', '丑', '土'], ['寅', '亥', '木'], ['卯', '戌', '火'], ['辰', '酉', '金'], ['巳', '申', '水'], ['午', '未', '火'],
 ];
 const ZHI_CHONG = [
 	['子', '午'], ['丑', '未'], ['寅', '申'], ['卯', '酉'], ['辰', '戌'], ['巳', '亥'],
@@ -33,6 +33,32 @@ function shortRel(item){
 function hiddenStemText(rec){
 	const stems = rec && rec.stemInBranch ? rec.stemInBranch : [];
 	return stems.map((item)=>`${item.cell || ''}${item.relative || ''}`).filter(Boolean);
+}
+
+function collectGods(rec){
+	if(!rec){
+		return [];
+	}
+	const gods = [];
+	if(Array.isArray(rec.shenSha)){
+		gods.push(...rec.shenSha);
+	}
+	if(Array.isArray(rec.goodGods)){
+		gods.push(...rec.goodGods);
+	}
+	if(Array.isArray(rec.neutralGods)){
+		gods.push(...rec.neutralGods);
+	}
+	if(Array.isArray(rec.badGods)){
+		gods.push(...rec.badGods);
+	}
+	if(rec.stem){
+		gods.push(...collectGods(rec.stem));
+	}
+	if(rec.branch){
+		gods.push(...collectGods(rec.branch));
+	}
+	return Array.from(new Set(gods.filter(Boolean)));
 }
 
 function elementClass(label){
@@ -60,6 +86,7 @@ function makeColumn(title, rec, kind){
 		branch: item.branch && item.branch.cell ? item.branch.cell : '',
 		stemRel: shortRel(item.stem),
 		hidden: hiddenStemText(item),
+		shenSha: collectGods(item),
 		naying: item.naying || '',
 		nayingPhase: item.nayingPhase || '',
 		ganziPhase: item.ganziPhase || '',
@@ -109,7 +136,7 @@ function pairRelations(values, pairs, type, relationLabel){
 			}
 			for(let k=0; k<pairs.length; k++){
 				const pair = pairs[k];
-				if(pair.indexOf(a) >= 0 && pair.indexOf(b) >= 0){
+				if((a === pair[0] && b === pair[1]) || (a === pair[1] && b === pair[0])){
 					const label = relationLabel || pair[2] || '';
 					rels.push({
 						key: relationKey(i, j, label, type),
@@ -160,10 +187,43 @@ function compactRelations(rels, limit){
 		.slice(0, limit);
 }
 
+function relOverlaps(a, b){
+	return !(a.end < b.start || a.start > b.end);
+}
+
+function layoutRelations(rels){
+	const lanes = [];
+	return rels.map((item)=>{
+		let lane = lanes.findIndex((line)=>!line.some((existing)=>relOverlaps(existing, item)));
+		if(lane < 0){
+			lane = lanes.length;
+			lanes.push([]);
+		}
+		const next = {
+			...item,
+			lane,
+		};
+		lanes[lane].push(next);
+		return next;
+	});
+}
+
 class BaZiFineChart extends Component{
+	hasDirection(rec){
+		return !!(rec && Array.isArray(rec.direction) && rec.direction.length);
+	}
+
 	buildColumns(){
 		const rec = this.props.value || {};
 		const four = rec.fourColumns || {};
+		if(this.props.mode === 'simple' || !this.hasDirection(rec)){
+			return [
+				makeColumn('年柱', four.year, 'natal'),
+				makeColumn('月柱', four.month, 'natal'),
+				makeColumn('日柱', four.day, 'day'),
+				makeColumn('时柱', four.time, 'natal'),
+			];
+		}
 		const current = getCurrentDirection(rec);
 		return [
 			makeColumn('流年', current.sub, 'flow'),
@@ -173,6 +233,10 @@ class BaZiFineChart extends Component{
 			makeColumn('日柱', four.day, 'day'),
 			makeColumn('时柱', four.time, 'natal'),
 		];
+	}
+
+	isNatalStart(idx, cols){
+		return cols.length > 4 && idx === 2;
 	}
 
 	buildStemRelations(cols){
@@ -210,7 +274,7 @@ class BaZiFineChart extends Component{
 			<div className="horosa-bazi-fine-row horosa-bazi-fine-header">
 				<div className="horosa-bazi-fine-label" />
 				{cols.map((item, idx)=>(
-					<div className={`horosa-bazi-fine-cell ${idx === 2 ? 'horosa-bazi-fine-natal-start' : ''}`} key={item.title}>{item.title}</div>
+					<div className={`horosa-bazi-fine-cell ${this.isNatalStart(idx, cols) ? 'horosa-bazi-fine-natal-start' : ''}`} key={item.title}>{item.title}</div>
 				))}
 			</div>
 		);
@@ -221,7 +285,7 @@ class BaZiFineChart extends Component{
 			<div className={`horosa-bazi-fine-row ${className || ''}`}>
 				<div className="horosa-bazi-fine-label">{label}</div>
 				{cols.map((item, idx)=>(
-					<div className={`horosa-bazi-fine-cell ${idx === 2 ? 'horosa-bazi-fine-natal-start' : ''}`} key={`${label}-${idx}`}>
+					<div className={`horosa-bazi-fine-cell ${this.isNatalStart(idx, cols) ? 'horosa-bazi-fine-natal-start' : ''}`} key={`${label}-${idx}`}>
 						{getter(item, idx)}
 					</div>
 				))}
@@ -229,20 +293,37 @@ class BaZiFineChart extends Component{
 		);
 	}
 
-	renderRelationLayer(rels, className){
+	renderRelationLayer(rels, className, colCount){
+		const cols = colCount || 1;
+		const laid = layoutRelations(rels);
+		const laneCount = laid.reduce((max, item)=>Math.max(max, item.lane + 1), 1);
+		const gridHeight = Math.max(28, laneCount * 24 + 6);
 		return (
-			<div className={`horosa-bazi-fine-row horosa-bazi-fine-relation-row ${className || ''}`}>
+			<div className={`horosa-bazi-fine-row horosa-bazi-fine-relation-row ${className || ''}`} style={{ minHeight: gridHeight + 4 }}>
 				<div className="horosa-bazi-fine-label" />
-				<div className="horosa-bazi-fine-relation-grid">
-					{rels.map((item)=>(
+				<div
+					className="horosa-bazi-fine-relation-grid"
+					style={{
+						gridColumn: `2 / span ${cols}`,
+						height: gridHeight,
+					}}
+				>
+					{laid.map((item)=>{
+						const left = ((item.start + 0.5) / cols) * 100;
+						const width = Math.max(0, ((item.end - item.start) / cols) * 100);
+						return (
 						<div
 							className={`horosa-bazi-fine-relation horosa-bazi-fine-relation-${elementClass(item.label)}`}
-							style={{ gridColumn: `${item.start + 1} / ${item.end + 2}` }}
+							style={{
+								left: `${left}%`,
+								top: `${item.lane * 24}px`,
+								width: `${width}%`,
+							}}
 							key={item.key}
 						>
 							<span>{item.label}</span>
 						</div>
-					))}
+					);})}
 				</div>
 			</div>
 		);
@@ -253,10 +334,25 @@ class BaZiFineChart extends Component{
 			<div className="horosa-bazi-fine-row horosa-bazi-fine-hidden-row">
 				<div className="horosa-bazi-fine-label">藏干</div>
 				{cols.map((item, idx)=>(
-					<div className={`horosa-bazi-fine-cell ${idx === 2 ? 'horosa-bazi-fine-natal-start' : ''}`} key={`hidden-${idx}`}>
+					<div className={`horosa-bazi-fine-cell ${this.isNatalStart(idx, cols) ? 'horosa-bazi-fine-natal-start' : ''}`} key={`hidden-${idx}`}>
 						{item.hidden.map((txt, subIdx)=>(
 							<span key={`${txt}-${subIdx}`}>{txt}</span>
 						))}
+					</div>
+				))}
+			</div>
+		);
+	}
+
+	renderShenShaRow(cols){
+		return (
+			<div className="horosa-bazi-fine-row horosa-bazi-fine-shensha-row">
+				<div className="horosa-bazi-fine-label">神煞</div>
+				{cols.map((item, idx)=>(
+					<div className={`horosa-bazi-fine-cell ${this.isNatalStart(idx, cols) ? 'horosa-bazi-fine-natal-start' : ''}`} key={`shensha-${idx}`}>
+						{item.shenSha.length ? item.shenSha.slice(0, 6).map((txt)=>(
+							<span key={txt}>{txt}</span>
+						)) : <span className="horosa-bazi-fine-empty">—</span>}
 					</div>
 				))}
 			</div>
@@ -267,23 +363,25 @@ class BaZiFineChart extends Component{
 		const cols = this.buildColumns();
 		const stemRelations = this.buildStemRelations(cols);
 		const branchRelations = this.buildBranchRelations(cols);
+		const isSimple = this.props.mode === 'simple';
 		return (
-			<div className="horosa-bazi-fine-chart">
+			<div className={`horosa-bazi-fine-chart ${cols.length === 4 ? 'horosa-bazi-fine-chart-core' : ''} ${isSimple ? 'horosa-bazi-fine-chart-simple' : ''}`}>
 				{this.renderHeader(cols)}
 				{this.renderSimpleRow('主星', cols, (item)=><strong>{item.stemRel}</strong>, 'horosa-bazi-fine-main-star-row')}
-				{this.renderRelationLayer(stemRelations, 'horosa-bazi-fine-stem-relations')}
+				{this.renderRelationLayer(stemRelations, 'horosa-bazi-fine-stem-relations', cols.length)}
 				{this.renderSimpleRow('天干', cols, (item)=>(
 					<span className="horosa-bazi-fine-glyph" style={{ color: this.getElementColor(item.rec.stem) }}>{item.stem}</span>
 				), 'horosa-bazi-fine-stem-row')}
 				{this.renderSimpleRow('地支', cols, (item)=>(
 					<span className="horosa-bazi-fine-glyph" style={{ color: this.getElementColor(item.rec.branch) }}>{item.branch}</span>
 				), 'horosa-bazi-fine-branch-row')}
-				{this.renderRelationLayer(branchRelations, 'horosa-bazi-fine-branch-relations')}
+				{this.renderRelationLayer(branchRelations, 'horosa-bazi-fine-branch-relations', cols.length)}
 				{this.renderHiddenRow(cols)}
-				{this.renderSimpleRow('纳音', cols, (item)=><strong>{item.naying}</strong>, 'horosa-bazi-fine-info-row')}
-				{this.renderSimpleRow('星运', cols, (item)=><strong>{item.nayingPhase}</strong>, 'horosa-bazi-fine-info-row')}
-				{this.renderSimpleRow('自坐', cols, (item)=><strong>{item.ganziPhase}</strong>, 'horosa-bazi-fine-info-row')}
-				{this.renderSimpleRow('空亡', cols, (item)=><strong>{item.xunEmpty}</strong>, 'horosa-bazi-fine-info-row')}
+				{isSimple ? this.renderShenShaRow(cols) : null}
+				{!isSimple ? this.renderSimpleRow('纳音', cols, (item)=><strong>{item.naying}</strong>, 'horosa-bazi-fine-info-row') : null}
+				{!isSimple ? this.renderSimpleRow('星运', cols, (item)=><strong>{item.nayingPhase}</strong>, 'horosa-bazi-fine-info-row') : null}
+				{!isSimple ? this.renderSimpleRow('自坐', cols, (item)=><strong>{item.ganziPhase}</strong>, 'horosa-bazi-fine-info-row') : null}
+				{!isSimple ? this.renderSimpleRow('空亡', cols, (item)=><strong>{item.xunEmpty}</strong>, 'horosa-bazi-fine-info-row') : null}
 			</div>
 		);
 	}

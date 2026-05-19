@@ -1,13 +1,12 @@
 import { Component } from 'react';
 import { Row, Col, Divider } from 'antd';
 import { XQButton as Button } from '../xq-ui';
-import FourZhu from './FourZhu';
 import BaZiFineChart from './BaZiFineChart';
 import { BaZiMsg } from '../../msg/bazimsg';
 import { randomStr,} from '../../utils/helper';
 import styles from '../../css/styles.less';
 
-const BAZI_CHART_STYLE_KEY = 'baziChartStyle';
+export const BAZI_CHART_STYLE_KEY = 'baziChartStyle';
 
 class PaiBaZi extends Component{
 	constructor(props) {
@@ -24,11 +23,36 @@ class PaiBaZi extends Component{
 	}
 
 	changeChartStyle(chartStyle){
+		if(this.props.onChartStyleChange){
+			this.props.onChartStyleChange(chartStyle);
+			return;
+		}
 		this.setState({
 			chartStyle,
 		}, ()=>{
 			localStorage.setItem(BAZI_CHART_STYLE_KEY, chartStyle);
 		});
+	}
+
+	renderStyleButtons(isFine){
+		return (
+			<div className="horosa-bazi-summary-style-actions" aria-label="盘式">
+				<button
+					type="button"
+					className={`horosa-bazi-summary-style-button ${!isFine ? 'is-active' : ''}`}
+					onClick={()=>this.changeChartStyle('simple')}
+				>
+					简盘
+				</button>
+				<button
+					type="button"
+					className={`horosa-bazi-summary-style-button ${isFine ? 'is-active' : ''}`}
+					onClick={()=>this.changeChartStyle('fine')}
+				>
+					细盘
+				</button>
+			</div>
+		);
 	}
 
 	genDirDom(dirs, directTime){
@@ -99,72 +123,78 @@ class PaiBaZi extends Component{
 		let name = fields.name ? fields.name.value : null;
 		let rec = this.props.value ? this.props.value : {};
 		let height = this.props.height ? this.props.height : '100%';
+		const chartStyle = this.props.chartStyle ? this.props.chartStyle : this.state.chartStyle;
+		const isFine = chartStyle === 'fine';
+		const showStyleSwitch = this.props.showStyleSwitch !== false;
+		const measuredHeight = typeof height === 'number' ? `${height - (showStyleSwitch ? 100 : 8)}px` : height;
 		let style = {
-			height: (height-100) + 'px',
+			height: measuredHeight,
 			overflowY:'auto', 
 			overflowX:'hidden',
-			marginTop: 20,
+			marginTop: showStyleSwitch ? 20 : 0,
 		};
 
 		let nongli = null;
 		let realtm = null;
 		let chef = null;
 		let jiedelta = null;
+		let extraLine = null;
 		if(rec.nongli){
 			let leap = rec.nongli.leap ? '闰' : '';
 			nongli = `${rec.nongli.year}年${leap}${rec.nongli.month}${rec.nongli.day}`;
 			realtm = '真太阳时:' + rec.nongli.birth;
-			chef = rec.nongli.chef + '；';
-			jiedelta = rec.nongli.jiedelta + '，';
+			chef = rec.nongli.chef || '';
+			jiedelta = rec.nongli.jiedelta || '';
 		}
 
 		let tiaohou = null;
-		if(rec.tiaohou){
+		if(rec.tiaohou && rec.tiaohou.length){
 			tiaohou = '调候：' + rec.tiaohou.join('，');
 		}
+		const detailParts = [jiedelta, chef].filter(Boolean);
+		extraLine = detailParts.length ? detailParts.join('，') : '';
+		if(extraLine && chef){
+			extraLine += '；';
+		}
+		extraLine = [extraLine, tiaohou].filter(Boolean).join(' ');
 
 		let dirdoms = this.genDirDom(rec.direction, rec.directTime);
-		const isFine = this.state.chartStyle === 'fine';
-
 		return (
 			<div className={`horosa-bazi-scroll ${styles.scrollbar}`} style={style} id={this.state.id}>
-				<div className="horosa-bazi-style-switch">
-					<Button
-						size="small"
-						type={!isFine ? 'primary' : 'default'}
-						onClick={()=>this.changeChartStyle('simple')}
-					>
-						简盘
-					</Button>
-					<Button
-						size="small"
-						type={isFine ? 'primary' : 'default'}
-						onClick={()=>this.changeChartStyle('fine')}
-					>
-						细盘
-					</Button>
-				</div>
+				{showStyleSwitch ? (
+					<div className="horosa-bazi-style-switch">
+						<Button
+							size="small"
+							type={!isFine ? 'primary' : 'default'}
+							onClick={()=>this.changeChartStyle('simple')}
+						>
+							简盘
+						</Button>
+						<Button
+							size="small"
+							type={isFine ? 'primary' : 'default'}
+							onClick={()=>this.changeChartStyle('fine')}
+						>
+							细盘
+						</Button>
+					</div>
+				) : null}
 				<Row className="horosa-bazi-summary" style={{marginBottom: 10}}>
 						<Col span={24}>
+							<div className="horosa-bazi-summary-inner">
+								<div className="horosa-bazi-summary-copy">
 							<span style={{fontSize: 16, fontWeight: 'bold'}}>{BaZiMsg[rec.gender]}</span>&nbsp;
 							<span>{name}</span>&nbsp;
 							<span>农历:</span>
 						<span>{nongli}</span>&nbsp;
 						<span>{realtm}</span><br />
-						<span>{jiedelta}</span>
-							<span>{chef}</span>&nbsp;
-							<span>{tiaohou}</span>
+						<span>{extraLine}</span>
+								</div>
+								{this.renderStyleButtons(isFine)}
+							</div>
 						</Col>
 					</Row>
-				{isFine ? (
-					<BaZiFineChart value={rec} fields={fields} />
-				) : (
-					<>
-						<FourZhu value={rec.fourColumns} baziOpt={this.props.baziOpt} gong12God={rec.gong12God} />
-						<Divider />
-						{dirdoms}
-					</>
-				)}
+				<BaZiFineChart value={rec} fields={fields} mode={isFine ? 'fine' : 'simple'} />
 			</div>
 		);
 	}

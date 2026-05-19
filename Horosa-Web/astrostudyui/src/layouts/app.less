@@ -1340,7 +1340,7 @@
 
     .horosa-workspace-shell .horosa-bazi-summary {
         margin: 4px 2px 14px;
-        padding: 13px 16px;
+        padding: 10px 16px;
         border: 1px solid var(--horosa-border);
         border-radius: var(--horosa-radius);
         background:
@@ -1348,6 +1348,62 @@
             var(--horosa-panel-soft);
         color: var(--horosa-text);
         line-height: 1.65;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-summary-inner {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 0;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-summary-copy {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-summary-style-actions {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 28px;
+        margin-left: auto;
+        padding-right: 8px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-summary-style-button {
+        min-width: 112px;
+        height: 42px;
+        border: 1px solid rgba(215, 173, 105, 0.22);
+        border-radius: 8px;
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent),
+            rgba(255, 255, 255, 0.018);
+        color: rgba(239, 228, 210, 0.84);
+        font-size: 15px;
+        font-weight: 760;
+        cursor: pointer;
+        transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-summary-style-button:hover,
+    .horosa-workspace-shell .horosa-bazi-summary-style-button.is-active {
+        border-color: var(--horosa-astro-line-strong);
+        background: rgba(231, 189, 117, 0.10);
+        color: var(--horosa-astro-gold);
+    }
+
+    :root[data-horosa-appearance='light'] .horosa-workspace-shell .horosa-bazi-summary-style-button {
+        border-color: var(--horosa-border);
+        background: #ffffff;
+        color: var(--horosa-text-soft);
+    }
+
+    :root[data-horosa-appearance='light'] .horosa-workspace-shell .horosa-bazi-summary-style-button:hover,
+    :root[data-horosa-appearance='light'] .horosa-workspace-shell .horosa-bazi-summary-style-button.is-active {
+        border-color: var(--horosa-gold);
+        background: rgba(184, 137, 63, 0.11);
+        color: var(--horosa-gold);
     }
 
     .horosa-workspace-shell .horosa-bazi-summary a {
@@ -1633,6 +1689,58 @@
         font-weight: 700;
     }
 
+    .horosa-workspace-shell .horosa-bazi-main-stack {
+        display: grid;
+        grid-template-rows: minmax(398px, 1.28fr) minmax(220px, 0.72fr);
+        gap: 8px;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        padding: 8px 10px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-main-stack-fine {
+        grid-template-rows: minmax(398px, 1.28fr) minmax(220px, 0.72fr);
+        gap: 8px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-main-chart-slot,
+    .horosa-workspace-shell .horosa-bazi-main-flow-slot {
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-main-stack-fine .horosa-bazi-main-chart-slot {
+        overflow: hidden;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-main-stack-fine .horosa-bazi-main-chart-slot .horosa-bazi-scroll {
+        padding-bottom: 0;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-main-stack-fine .horosa-bazi-fine-chart {
+        margin-bottom: 0;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-main-chart-slot .horosa-bazi-scroll {
+        margin-top: 0 !important;
+        padding: 0 4px 6px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-main-chart-slot .horosa-bazi-summary {
+        margin-bottom: 8px !important;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-main-flow-slot {
+        border-top: 1px solid rgba(215, 173, 105, 0.13);
+        padding-top: 8px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-main-stack-fine .horosa-bazi-main-flow-slot {
+        padding-top: 0;
+    }
+
     .horosa-workspace-shell .horosa-bazi-fine-chart {
         min-width: 0;
         width: 100%;
@@ -1646,6 +1754,20 @@
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
+    .horosa-workspace-shell .horosa-bazi-fine-chart-simple {
+        min-height: 100%;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-fine-chart-simple .horosa-bazi-fine-relation-row {
+        display: none;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-fine-chart-simple .horosa-bazi-fine-label,
+    .horosa-workspace-shell .horosa-bazi-fine-chart-simple .horosa-bazi-fine-cell {
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
     :root[data-horosa-appearance='light'] .horosa-workspace-shell .horosa-bazi-fine-chart {
         border-color: var(--horosa-border);
         background: var(--horosa-surface-solid);
@@ -1656,6 +1778,10 @@
         display: grid;
         grid-template-columns: 62px repeat(6, minmax(0, 1fr));
         min-width: 0;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-fine-chart-core .horosa-bazi-fine-row {
+        grid-template-columns: 62px repeat(4, minmax(0, 1fr));
     }
 
     .horosa-workspace-shell .horosa-bazi-fine-header,
@@ -1734,26 +1860,32 @@
         text-shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
     }
 
+    .horosa-workspace-shell .horosa-bazi-fine-chart-simple .horosa-bazi-fine-glyph {
+        min-width: 36px;
+        font-size: 32px;
+    }
+
     .horosa-workspace-shell .horosa-bazi-fine-relation-row {
         min-height: 28px;
         padding: 2px 0;
     }
 
     .horosa-workspace-shell .horosa-bazi-fine-relation-grid {
-        display: grid;
-        grid-column: 2 / -1;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-        grid-auto-rows: 24px;
-        gap: 2px 0;
+        position: relative;
+        display: block;
+        grid-column: 2 / span 6;
+        min-width: 0;
+        width: 100%;
         padding: 0 5px;
     }
 
     .horosa-workspace-shell .horosa-bazi-fine-relation {
-        position: relative;
+        position: absolute;
         display: flex;
         align-items: flex-start;
         justify-content: center;
         min-width: 0;
+        height: 24px;
         color: var(--horosa-muted);
     }
 
@@ -1807,27 +1939,62 @@
     .horosa-workspace-shell .horosa-bazi-fine-hidden-row .horosa-bazi-fine-cell {
         display: flex;
         flex-direction: column;
-        min-height: 82px;
-        padding-top: 14px;
-        padding-bottom: 14px;
+        gap: 1px;
+        min-height: 50px;
+        padding-top: 5px;
+        padding-bottom: 5px;
         color: var(--horosa-text-soft);
-        font-size: 14px;
-        line-height: 1.48;
+        font-size: 13px;
+        line-height: 1.12;
     }
 
     .horosa-workspace-shell .horosa-bazi-fine-hidden-row .horosa-bazi-fine-cell span {
         display: block;
-        min-height: 20px;
+        min-height: 14px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-fine-shensha-row {
+        border-top: 1px solid rgba(142, 148, 158, 0.10);
+    }
+
+    .horosa-workspace-shell .horosa-bazi-fine-shensha-row .horosa-bazi-fine-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        min-height: 64px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        color: var(--horosa-text);
+        font-size: 11px;
+        line-height: 1.14;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-fine-shensha-row .horosa-bazi-fine-cell span {
+        display: block;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-fine-empty {
+        color: var(--horosa-muted);
+        opacity: 0.68;
     }
 
     .horosa-workspace-shell .horosa-bazi-fine-info-row {
         border-top: 1px solid rgba(142, 148, 158, 0.10);
     }
 
+    .horosa-workspace-shell .horosa-bazi-fine-hidden-row .horosa-bazi-fine-label,
+    .horosa-workspace-shell .horosa-bazi-fine-info-row .horosa-bazi-fine-label {
+        padding-top: 5px;
+        padding-bottom: 5px;
+    }
+
     .horosa-workspace-shell .horosa-bazi-fine-info-row .horosa-bazi-fine-cell {
-        min-height: 48px;
+        min-height: 30px;
+        padding-top: 5px;
+        padding-bottom: 5px;
         color: var(--horosa-text);
-        font-size: 14px;
+        font-size: 13px;
+        line-height: 1.18;
     }
 
     .horosa-workspace-shell .horosa-bazi-scroll .ant-divider {
@@ -1858,6 +2025,467 @@
         background:
             linear-gradient(180deg, var(--horosa-cyan-soft), transparent),
             var(--horosa-bazi-year-bg) !important;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 2px 2px 12px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact {
+        gap: 6px;
+        height: 100%;
+        max-height: none !important;
+        padding: 0 2px 2px;
+        overflow: hidden;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 12px;
+        color: var(--horosa-text-soft);
+        font-weight: 650;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-row {
+        display: grid;
+        grid-template-columns: 54px minmax(0, 1fr);
+        align-items: stretch;
+        min-height: 112px;
+        border: 1px solid var(--horosa-border);
+        border-radius: 12px;
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+            var(--horosa-panel-bg);
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.10);
+        overflow: hidden;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-row {
+        grid-template-columns: 50px minmax(0, 1fr);
+        flex: 1 1 0;
+        min-height: 48px;
+        border-radius: 8px;
+        box-shadow: none;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-day-row {
+        min-height: 96px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-day-row {
+        min-height: 44px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-right: 1px solid var(--horosa-border);
+        background: var(--horosa-panel-soft);
+        color: var(--horosa-text);
+        text-align: center;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-label strong {
+        display: block;
+        width: 1.2em;
+        line-height: 1.12;
+        font-size: 20px;
+        font-weight: 780;
+        letter-spacing: 0;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-label strong {
+        font-size: 17px;
+        line-height: 1.05;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-label span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        height: 18px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: var(--horosa-accent-soft);
+        color: var(--horosa-accent-strong);
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-label span {
+        min-width: 24px;
+        height: 16px;
+        padding: 0 5px;
+        font-size: 10px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-axis {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x proximity;
+        scrollbar-width: thin;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-item {
+        position: relative;
+        flex: 0 0 72px;
+        min-width: 72px;
+        padding: 10px 8px 8px;
+        border: 0;
+        border-right: 1px solid var(--horosa-border);
+        border-radius: 0;
+        background: transparent;
+        color: var(--horosa-text);
+        text-align: center;
+        cursor: pointer;
+        scroll-snap-align: start;
+        transition: background 0.16s ease, color 0.16s ease;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-item {
+        flex-basis: 64px;
+        min-width: 64px;
+        padding: 5px 4px 3px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-item:hover,
+    .horosa-workspace-shell .horosa-bazi-flow-item:focus {
+        background: var(--horosa-panel-soft);
+        outline: none;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-item.is-selected {
+        background: rgba(142, 148, 158, 0.16);
+    }
+
+    :root[data-horosa-appearance='light'] .horosa-workspace-shell .horosa-bazi-flow-item.is-selected {
+        background: rgba(28, 31, 36, 0.055);
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-cap {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 7px;
+        border-radius: 0 0 8px 8px;
+        background: transparent;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-cap {
+        height: 5px;
+        border-radius: 0 0 6px 6px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-item.is-selected .horosa-bazi-flow-cap {
+        background: var(--horosa-text);
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-top,
+    .horosa-workspace-shell .horosa-bazi-flow-sub,
+    .horosa-workspace-shell .horosa-bazi-flow-foot {
+        display: block;
+        color: var(--horosa-text-soft);
+        white-space: nowrap;
+        line-height: 1.15;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-top {
+        margin-bottom: 6px;
+        font-size: 18px;
+        font-weight: 650;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-top {
+        margin-bottom: 1px;
+        font-size: 12px;
+        line-height: 1;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-sub {
+        min-height: 18px;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-sub {
+        min-height: 9px;
+        margin-bottom: 1px;
+        font-size: 9px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-pillar,
+    .horosa-workspace-shell .horosa-bazi-flow-label-only {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        min-height: 42px;
+        color: var(--horosa-text);
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-pillar,
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-label-only {
+        gap: 0;
+        min-height: 0;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-pillar {
+        flex-direction: row;
+        gap: 5px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-pillar span {
+        display: inline-flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 1px;
+        line-height: 1.05;
+        white-space: nowrap;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-pillar b,
+    .horosa-workspace-shell .horosa-bazi-flow-label-only b {
+        font-size: 24px;
+        font-weight: 780;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-pillar b,
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-label-only b {
+        font-size: 13px;
+        line-height: 0.96;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-pillar em {
+        color: var(--horosa-cinnabar, #b53a32);
+        font-size: 15px;
+        font-style: normal;
+        font-weight: 760;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-pillar em {
+        font-size: 8px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-foot {
+        margin-top: 6px;
+        overflow: hidden;
+        color: var(--horosa-text-muted);
+        font-size: 11px;
+        text-overflow: ellipsis;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-foot {
+        display: none;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-day-row .horosa-bazi-flow-item {
+        flex-basis: 66px;
+        min-width: 66px;
+        padding-top: 12px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-panel-compact .horosa-bazi-flow-day-row .horosa-bazi-flow-item {
+        flex-basis: 54px;
+        min-width: 54px;
+        padding-top: 6px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-flow-day-row .horosa-bazi-flow-sub,
+    .horosa-workspace-shell .horosa-bazi-flow-day-row .horosa-bazi-flow-foot {
+        display: none;
+    }
+
+    :root[data-horosa-appearance='light'] .horosa-workspace-shell .horosa-bazi-flow-row {
+        background: #ffffff;
+        box-shadow: 0 10px 24px rgba(64, 76, 92, 0.10);
+    }
+
+    :root[data-horosa-appearance='light'] .horosa-workspace-shell .horosa-bazi-flow-label {
+        background: #fbfbfa;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-app-info-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        height: 100%;
+        min-height: 0;
+        padding: 10px;
+        overflow: auto;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-card {
+        flex: 0 0 auto;
+        padding: 13px 14px;
+        border: 1px solid var(--horosa-border);
+        border-radius: 10px;
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 62%),
+            var(--horosa-panel-soft);
+        color: var(--horosa-text);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    :root[data-horosa-appearance='light'] .horosa-workspace-shell .horosa-bazi-info-card {
+        background: #ffffff;
+        box-shadow: 0 10px 22px rgba(64, 76, 92, 0.08);
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-card h3 {
+        margin: 0 0 10px;
+        color: var(--horosa-gold);
+        font-size: 15px;
+        font-weight: 820;
+        line-height: 1.2;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-card-hero {
+        border-color: rgba(215, 173, 105, 0.28);
+        background:
+            linear-gradient(135deg, rgba(216, 173, 99, 0.16), transparent 48%),
+            var(--horosa-panel-soft);
+    }
+
+    :root[data-horosa-appearance='light'] .horosa-workspace-shell .horosa-bazi-info-card-hero {
+        background:
+            linear-gradient(135deg, rgba(248, 204, 118, 0.20), transparent 50%),
+            #ffffff;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-name {
+        margin-bottom: 10px;
+        color: var(--horosa-text);
+        font-size: 19px;
+        font-weight: 860;
+        line-height: 1.25;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 10px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-pair {
+        min-width: 0;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-pair span,
+    .horosa-workspace-shell .horosa-bazi-info-table-row span,
+    .horosa-workspace-shell .horosa-bazi-info-lines span,
+    .horosa-workspace-shell .horosa-bazi-info-mini-grid span {
+        display: block;
+        color: var(--horosa-muted);
+        font-size: 12px;
+        font-weight: 720;
+        line-height: 1.2;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-pair strong {
+        display: block;
+        overflow-wrap: anywhere;
+        color: var(--horosa-text);
+        font-size: 13px;
+        font-weight: 760;
+        line-height: 1.35;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-table {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-table-row {
+        display: grid;
+        grid-template-columns: 42px 48px minmax(58px, 1fr) minmax(58px, 1fr);
+        gap: 8px;
+        align-items: center;
+        min-width: 0;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-table-row strong {
+        color: var(--horosa-text);
+        font-size: 15px;
+        font-weight: 820;
+        line-height: 1.1;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-table-row em {
+        overflow: hidden;
+        color: var(--horosa-text-soft);
+        font-size: 12px;
+        font-style: normal;
+        font-weight: 650;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-lines {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-lines p {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 9px;
+        margin: 0;
+        color: var(--horosa-text);
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.42;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-mini-grid div {
+        min-width: 0;
+        padding: 8px 9px;
+        border: 1px solid rgba(142, 148, 158, 0.13);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.025);
+    }
+
+    :root[data-horosa-appearance='light'] .horosa-workspace-shell .horosa-bazi-info-mini-grid div {
+        background: #fbfbfa;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-info-mini-grid strong {
+        display: block;
+        overflow: hidden;
+        margin-top: 3px;
+        color: var(--horosa-text);
+        font-size: 15px;
+        font-weight: 820;
+        line-height: 1.15;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .horosa-workspace-shell .horosa-ziwei-direction-button {
@@ -2594,6 +3222,15 @@
         border-radius: 0;
         background: #050607;
         box-shadow: none;
+    }
+
+    .horosa-workspace-shell .mainRootTabs.horosa-bazi-shell-active {
+        height: calc(100vh - 74px) !important;
+        max-height: calc(100vh - 74px) !important;
+    }
+
+    .horosa-workspace-shell .mainRootTabs.horosa-bazi-shell-active > .ant-tabs-content-holder .ant-tabs-tabpane {
+        padding: 0 !important;
     }
 
     .horosa-workspace-shell .mainRootTabs.horosa-astro-shell-active > .ant-tabs-content-holder {
@@ -3388,8 +4025,254 @@
         white-space: nowrap;
     }
 
+    .horosa-workspace-shell .horosa-guolao-quick-actions {
+        grid-template-columns: repeat(7, minmax(78px, 1fr));
+    }
+
+    .horosa-workspace-shell .horosa-guolao-quick-button {
+        font-family: var(--horosa-font-ui);
+    }
+
+    .horosa-guolao-quick-modal .ant-modal-body {
+        max-height: 72vh;
+        overflow: auto;
+        padding: 20px;
+    }
+
+    .horosa-guolao-quick-dialog {
+        display: grid;
+        gap: 14px;
+        color: var(--horosa-text);
+        font-family: var(--horosa-font-ui);
+    }
+
+    .horosa-guolao-quick-section {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+        border: 1px solid rgba(184, 136, 63, 0.18);
+        border-radius: 8px;
+        background: rgba(255, 252, 247, 0.72);
+    }
+
+    .horosa-guolao-quick-section-title {
+        color: var(--horosa-gold);
+        font-size: 15px;
+        font-weight: 780;
+    }
+
+    .horosa-guolao-quick-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    .horosa-guolao-quick-meta {
+        min-width: 0;
+        padding: 10px 12px;
+        border: 1px solid rgba(205, 166, 103, 0.16);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.76);
+    }
+
+    .horosa-guolao-quick-meta span {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--horosa-muted);
+        font-size: 12px;
+    }
+
+    .horosa-guolao-quick-meta strong {
+        color: var(--horosa-text);
+        font-size: 14px;
+        line-height: 1.55;
+        word-break: break-word;
+    }
+
+    .horosa-guolao-quick-card-grid,
+    .horosa-guolao-quick-god-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    .horosa-guolao-quick-year-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .horosa-guolao-quick-card,
+    .horosa-guolao-quick-god-card {
+        min-width: 0;
+        padding: 11px 12px;
+        border: 1px solid rgba(205, 166, 103, 0.16);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.82);
+        line-height: 1.58;
+    }
+
+    .horosa-guolao-quick-card-title {
+        color: var(--horosa-text);
+        font-size: 15px;
+        font-weight: 780;
+    }
+
+    .horosa-guolao-quick-card-subtitle,
+    .horosa-guolao-quick-card-text,
+    .horosa-guolao-quick-card em {
+        color: var(--horosa-text-soft);
+        font-size: 13px;
+        font-style: normal;
+    }
+
+    .horosa-guolao-quick-warning {
+        padding: 10px 12px;
+        border: 1px solid rgba(184, 136, 63, 0.2);
+        border-radius: 7px;
+        background: rgba(255, 246, 229, 0.82);
+        color: var(--horosa-text-soft);
+        font-size: 13px;
+        line-height: 1.7;
+    }
+
+    .horosa-guolao-quick-pattern-good {
+        border-color: rgba(44, 138, 93, 0.24);
+        background: rgba(232, 248, 239, 0.68);
+    }
+
+    .horosa-guolao-quick-pattern-bad {
+        border-color: rgba(188, 90, 70, 0.24);
+        background: rgba(255, 239, 235, 0.68);
+    }
+
+    .horosa-guolao-quick-table {
+        overflow: hidden;
+        border: 1px solid rgba(205, 166, 103, 0.16);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.82);
+    }
+
+    .horosa-guolao-quick-table-row {
+        display: grid;
+        grid-template-columns: 0.8fr 1fr 1.4fr 1fr 1fr 0.9fr;
+        gap: 8px;
+        align-items: center;
+        min-height: 38px;
+        padding: 8px 10px;
+        border-top: 1px solid rgba(205, 166, 103, 0.12);
+        color: var(--horosa-text-soft);
+        font-size: 13px;
+    }
+
+    .horosa-guolao-quick-table-row:first-child {
+        border-top: 0;
+    }
+
+    .horosa-guolao-quick-table-row strong {
+        color: var(--horosa-text);
+        font-size: 14px;
+    }
+
+    .horosa-guolao-quick-table-head {
+        min-height: 34px;
+        background: rgba(215, 173, 105, 0.11);
+        color: var(--horosa-gold);
+        font-weight: 760;
+    }
+
+    .horosa-guolao-quick-weak-table .horosa-guolao-quick-table-row {
+        grid-template-columns: 0.9fr 0.5fr 1.3fr 1.4fr;
+    }
+
+    .horosa-guolao-quick-aspect-table .horosa-guolao-quick-table-row {
+        grid-template-columns: 0.9fr 1fr 0.9fr 0.8fr 0.8fr;
+    }
+
+    .horosa-guolao-quick-solid {
+        color: #187245;
+        font-weight: 800;
+    }
+
+    .horosa-guolao-quick-weak {
+        color: #bf2e2e;
+        font-weight: 800;
+    }
+
+    .horosa-guolao-quick-god-card div {
+        margin-top: 5px;
+        color: var(--horosa-text-soft);
+        font-size: 13px;
+        word-break: break-word;
+    }
+
+    .horosa-guolao-quick-god-card div span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        margin-right: 6px;
+        border-radius: 50%;
+        background: rgba(184, 136, 63, 0.12);
+        color: var(--horosa-gold);
+        font-weight: 760;
+    }
+
+    .horosa-guolao-quick-empty {
+        padding: 12px;
+        border: 1px dashed rgba(184, 136, 63, 0.24);
+        border-radius: 7px;
+        color: var(--horosa-muted);
+        font-size: 13px;
+        text-align: center;
+    }
+
+    :root[data-horosa-appearance='dark'] .horosa-guolao-quick-modal .ant-modal-content,
+    :root[data-horosa-appearance='dark'] .horosa-guolao-quick-modal .ant-modal-header {
+        background: #171719;
+        border-color: rgba(215, 173, 105, 0.15);
+    }
+
+    :root[data-horosa-appearance='dark'] .horosa-guolao-quick-modal .ant-modal-title,
+    :root[data-horosa-appearance='dark'] .horosa-guolao-quick-modal .ant-modal-close {
+        color: rgba(245, 233, 212, 0.88);
+    }
+
+    :root[data-horosa-appearance='dark'] .horosa-guolao-quick-section,
+    :root[data-horosa-appearance='dark'] .horosa-guolao-quick-card,
+    :root[data-horosa-appearance='dark'] .horosa-guolao-quick-god-card,
+    :root[data-horosa-appearance='dark'] .horosa-guolao-quick-meta,
+    :root[data-horosa-appearance='dark'] .horosa-guolao-quick-table {
+        background: rgba(255, 255, 255, 0.035);
+        border-color: rgba(215, 173, 105, 0.13);
+    }
+
+    :root[data-horosa-appearance='dark'] .horosa-guolao-quick-pattern-good {
+        background: rgba(39, 126, 83, 0.12);
+    }
+
+    :root[data-horosa-appearance='dark'] .horosa-guolao-quick-pattern-bad {
+        background: rgba(170, 68, 55, 0.12);
+    }
+
     .horosa-workspace-shell .horosa-bazi-redesign .horosa-bazi-redesign-grid {
         grid-template-columns: clamp(285px, 20vw, 330px) minmax(520px, 1fr) clamp(335px, 25vw, 400px);
+        height: 100%;
+        min-height: 0;
+        align-items: stretch;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-redesign .horosa-astro-redesign-layout {
+        grid-template-rows: minmax(0, 1fr);
+        height: 100%;
+        min-height: 0;
+    }
+
+    .horosa-workspace-shell .horosa-bazi-redesign .horosa-bazi-input-panel,
+    .horosa-workspace-shell .horosa-bazi-redesign .horosa-bazi-chart-panel,
+    .horosa-workspace-shell .horosa-bazi-redesign .horosa-bazi-info-panel {
+        height: 100%;
+        min-height: 0;
+        align-self: stretch;
     }
 
     .horosa-workspace-shell .horosa-bazi-redesign .horosa-bazi-input-panel {
@@ -4782,6 +5665,16 @@
     .horosa-workspace-shell .horosa-guolao-redesign .horosa-guolao-redesign-layout {
         grid-template-rows: minmax(0, 1fr) 64px;
         gap: 4px;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .horosa-workspace-shell .horosa-guolao-page,
+    .horosa-workspace-shell .horosa-guolao-redesign {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
     }
 
     .horosa-workspace-shell .horosa-guolao-redesign .horosa-guolao-redesign-grid {
@@ -4789,6 +5682,8 @@
         grid-template-columns: clamp(285px, 20vw, 330px) minmax(520px, 1fr) clamp(335px, 25vw, 400px);
         gap: 4px;
         min-height: 0;
+        height: 100%;
+        max-height: 100%;
         overflow: hidden;
     }
 
@@ -4937,6 +5832,18 @@
         font-weight: 650;
     }
 
+    .horosa-workspace-shell .horosa-guolao-toggle-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .horosa-workspace-shell .horosa-guolao-toggle-grid .ant-btn {
+        width: 100%;
+        justify-content: center;
+        font-weight: 720;
+    }
+
     .horosa-workspace-shell .horosa-guolao-redesign .horosa-guolao-chart-panel {
         display: flex;
         align-items: center;
@@ -4947,8 +5854,20 @@
         overflow: auto;
     }
 
+    .horosa-workspace-shell .horosa-guolao-redesign .horosa-guolao-chart-panel-moira {
+        align-items: flex-start;
+        justify-content: flex-start;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable both-edges;
+    }
+
     .horosa-workspace-shell .horosa-guolao-redesign .horosa-guolao-chart-panel > * {
         max-width: 100%;
+    }
+
+    .horosa-workspace-shell .horosa-guolao-redesign .horosa-guolao-chart-panel-moira > * {
+        flex: 0 0 auto;
+        max-width: none;
     }
 
     .horosa-workspace-shell .horosa-guolao-redesign .horosa-guolao-info-panel {
@@ -5324,6 +6243,36 @@
         font-weight: 720;
     }
 
+    .horosa-workspace-shell .horosa-liureng-quick-actions {
+        grid-template-columns: repeat(9, minmax(72px, 1fr));
+    }
+
+    .horosa-workspace-shell .horosa-liureng-meta-quick-button {
+        border-color: rgba(215, 173, 105, 0.34);
+        background: rgba(255, 255, 255, 0.016);
+    }
+
+    .horosa-workspace-shell .horosa-liureng-meta-quick-button strong {
+        overflow: hidden;
+        width: 100%;
+        color: var(--horosa-astro-gold);
+        font-size: 13px;
+        font-weight: 760;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .horosa-workspace-shell .horosa-liureng-meta-quick-button span {
+        color: var(--horosa-astro-muted);
+        font-size: 11px;
+    }
+
+    :root[data-horosa-appearance='light'] .horosa-workspace-shell .horosa-liureng-meta-quick-button {
+        border-color: rgba(184, 137, 63, 0.28);
+        background: var(--horosa-surface-solid);
+    }
+
     .horosa-workspace-shell .horosa-liureng-redesign .horosa-liureng-chart-panel {
         display: flex;
         align-items: center;
@@ -5331,7 +6280,7 @@
         min-width: 0;
         min-height: 0;
         padding: 6px !important;
-        overflow: auto;
+        overflow: hidden;
     }
 
     .horosa-workspace-shell .horosa-liureng-chart-host {
@@ -5341,6 +6290,16 @@
         width: 100%;
         height: 100%;
         min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .horosa-workspace-shell .horosa-liureng-chart-host > svg {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100%;
+        max-height: 100%;
         min-height: 0;
     }
 

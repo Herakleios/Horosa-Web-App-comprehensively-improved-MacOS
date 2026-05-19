@@ -123,6 +123,12 @@ function extractGanZi(text){
 	return '';
 }
 
+function extractBranch(text){
+	const raw = `${text || ''}`;
+	const match = raw.match(/[子丑寅卯辰巳午未申酉戌亥]/);
+	return match ? match[0] : '';
+}
+
 function resolveGuaYearGanZi(liureng){
 	if(!liureng){
 		return '';
@@ -280,6 +286,35 @@ function resolveDisplayRunYear(runyear, birth, guaFields){
 		...(runyear || {}),
 		...fallback,
 	};
+}
+
+function buildMetaRows(obj){
+	let res = [];
+	if(!obj || typeof obj !== 'object'){
+		return res;
+	}
+	for(let k in obj){
+		let data = {
+			key: k,
+			value: obj[k],
+		};
+		let pidx = k.indexOf('(');
+		if(pidx >= 0){
+			data.key = k.substr(0, pidx);
+		}
+		if(data.value instanceof Array){
+			data.value = data.value.join('');
+		}
+		res.push(data);
+	}
+	return res;
+}
+
+function getMetaSummary(rows){
+	if(!rows || rows.length === 0){
+		return '暂无信息';
+	}
+	return `${rows.length}项信息`;
 }
 
 const DA_GE_META = {
@@ -3970,6 +4005,7 @@ class LiuRengMain extends Component{
 			calcChart: null,
 			rightPanelTab: 'dage',
 			chartType: readLiurengChartType(),
+			metaDialog: null,
 		};
 
 		this.unmounted = false;
@@ -3998,6 +4034,8 @@ class LiuRengMain extends Component{
 		this.saveLiuRengAISnapshot = this.saveLiuRengAISnapshot.bind(this);
 		this.clickSaveCase = this.clickSaveCase.bind(this);
 		this.handleSnapshotRefreshRequest = this.handleSnapshotRefreshRequest.bind(this);
+		this.openMetaDialog = this.openMetaDialog.bind(this);
+		this.closeMetaDialog = this.closeMetaDialog.bind(this);
 
 		if(this.props.hook){
 			this.props.hook.fun = (fields, chartObj)=>{
@@ -4007,6 +4045,18 @@ class LiuRengMain extends Component{
 				this.startPaiPanByFields(fields || this.props.fields, chartObj || this.props.value);
 			};
 		}
+	}
+
+	openMetaDialog(payload){
+		this.setState({
+			metaDialog: payload,
+		});
+	}
+
+	closeMetaDialog(){
+		this.setState({
+			metaDialog: null,
+		});
 	}
 
 	onFieldsChange(field){
@@ -4791,6 +4841,107 @@ class LiuRengMain extends Component{
 		);
 	}
 
+	buildQuickMetaItems(displayRunYear){
+		const liureng = this.state.liureng;
+		if(!liureng){
+			return [];
+		}
+		const appliedBirth = getAppliedBirth(this.state);
+		const genderVal = appliedBirth && appliedBirth.gender
+			? appliedBirth.gender.value
+			: -1;
+		const genderText = genderVal === 0 || genderVal === '0' ? '女' : '男';
+		const runyear = displayRunYear || {};
+		const dunDing = liureng.xun ? (liureng.xun['遁丁'] || extractBranch(liureng.xun['旬丁'])) : '';
+		const yearGods = [];
+		const taisui1 = liureng.godsYear ? liureng.godsYear.taisui1 : null;
+		for(let i=0; i<LRConst.TaiSui.length; i++){
+			const key = LRConst.TaiSui[i];
+			yearGods.push({
+				key,
+				value: taisui1 && taisui1[key] ? taisui1[key] : '—',
+			});
+		}
+		const zhangsheng = ZSList.map((item)=>({
+			key: item,
+			value: ZhangSheng.wxphase[`${this.state.wuxing}_${item}`],
+		}));
+		return [{
+			title: '行年',
+			rows: [{
+				key: '行年',
+				value: runyear.year ? runyear.year : '—',
+			}, {
+				key: '年龄',
+				value: runyear.age !== undefined && runyear.age !== null ? `${runyear.age}岁` : '—',
+			}, {
+				key: '性别',
+				value: genderText,
+			}],
+		}, {
+			title: '旬日',
+			rows: [{
+				key: '旬空',
+				value: liureng.xun ? liureng.xun['旬空'] : '—',
+			}, {
+				key: '旬首',
+				value: liureng.xun ? liureng.xun['旬首'] : '—',
+			}, {
+				key: '旬尾',
+				value: liureng.xun ? liureng.xun['旬尾'] : '—',
+			}, {
+				key: '遁丁',
+				value: dunDing || '—',
+			}],
+		}, {
+			title: '旺衰',
+			rows: buildMetaRows(liureng.season),
+		}, {
+			title: '基础神煞',
+			rows: buildMetaRows(liureng.gods),
+		}, {
+			title: '干煞',
+			rows: buildMetaRows(liureng.godsGan),
+		}, {
+			title: '月煞',
+			rows: buildMetaRows(liureng.godsMonth),
+		}, {
+			title: '支煞',
+			rows: buildMetaRows(liureng.godsZi),
+		}, {
+			title: '年煞',
+			rows: yearGods,
+		}, {
+			title: `${this.state.wuxing}十二长生`,
+			rows: zhangsheng,
+		}];
+	}
+
+	renderQuickDock(displayRunYear){
+		const items = this.buildQuickMetaItems(displayRunYear);
+		return (
+			<div className="horosa-bottom-quick-dock horosa-liureng-quick-dock">
+				<div className="horosa-bottom-quick-title">快捷功能 <XQIcon name="ai" /></div>
+				<div className="horosa-bottom-quick-actions horosa-liureng-quick-actions">
+					{items.length ? items.map((item)=>(
+						<button
+							type="button"
+							className="horosa-bottom-quick-button horosa-liureng-meta-quick-button"
+							key={item.title}
+							onClick={()=>this.openMetaDialog({ title: item.title, gods: item.rows })}
+							title={`${item.title}：点击查看完整信息`}
+						>
+							<strong>{item.title}</strong>
+							<span>{getMetaSummary(item.rows)}</span>
+						</button>
+					)) : Array.from({length: 9}).map((_, idx)=>(
+						<div className="horosa-bottom-quick-placeholder" key={idx} />
+					))}
+				</div>
+			</div>
+		);
+	}
+
 	render(){
 		let height = this.props.height ? this.props.height : 760;
 		if(height === '100%'){
@@ -4816,6 +4967,8 @@ class LiuRengMain extends Component{
 			refContext.sanChuanText ? `三传：${refContext.sanChuanText}` : '',
 			refContext.dayGanZi ? `日干支：${refContext.dayGanZi}` : '',
 		].filter(Boolean).join('；');
+		const metaDialog = this.state.metaDialog;
+		const metaRows = metaDialog && Array.isArray(metaDialog.gods) ? metaDialog.gods : [];
 
 		let wxdoms = this.genWuXingDoms();
 		return (
@@ -4860,15 +5013,28 @@ class LiuRengMain extends Component{
 							})}
 						</div>
 					</div>
-					<div className="horosa-bottom-quick-dock horosa-liureng-quick-dock">
-						<div className="horosa-bottom-quick-title">快捷功能 <XQIcon name="ai" /></div>
-						<div className="horosa-bottom-quick-actions horosa-liureng-quick-placeholders">
-							{Array.from({length: 8}).map((_, idx)=>(
-								<div className="horosa-bottom-quick-placeholder" key={idx} />
-							))}
-						</div>
-					</div>
+					{this.renderQuickDock(displayRunYear)}
 				</div>
+				<Modal
+					visible={!!metaDialog}
+					title={metaDialog ? metaDialog.title : ''}
+					footer={null}
+					onCancel={this.closeMetaDialog}
+					width={420}
+					className="horosa-liureng-meta-modal"
+					destroyOnClose
+				>
+					<div className="horosa-liureng-meta-list">
+						{metaRows.length ? metaRows.map((item, idx)=>(
+							<div className="horosa-liureng-meta-row" key={`${item.key}_${idx}`}>
+								<span>{item.key}</span>
+								<strong>{item.value}</strong>
+							</div>
+						)) : (
+							<div className="horosa-liureng-meta-empty">暂无信息</div>
+						)}
+					</div>
+				</Modal>
 			</div>
 
 		);

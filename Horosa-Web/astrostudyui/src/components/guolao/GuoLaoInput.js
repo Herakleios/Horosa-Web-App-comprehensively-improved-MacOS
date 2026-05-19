@@ -3,8 +3,9 @@ import {convertLatToStr, convertLonToStr} from '../astro/AstroHelper';
 import DateTime from '../comp/DateTime';
 import SpaceTimePanel from '../comp/SpaceTimePanel';
 import * as SZConst from '../suzhan/SZConst';
-import { XQSelect as Select } from '../xq-ui';
+import { XQSelect as Select, XQToggle } from '../xq-ui';
 import XQIcon from '../xq-icons';
+import { GUOLAO_CHART_STYLE_CLASSIC, GUOLAO_CHART_STYLE_MOIRA, GUOLAO_CHART_STYLE_PICK, GUOLAO_LIFE_MODE_ASC, GUOLAO_LIFE_MODE_YUMAO, getStoredGuolaoLifeMode, normalizeGuolaoLifeMode, } from './GuoLaoChartStyle';
 
 const {Option} = Select;
 
@@ -22,7 +23,11 @@ class GuoLaoInput extends Component{
 		this.onGenderChange = this.onGenderChange.bind(this);
 		this.onDoubingSu28Change = this.onDoubingSu28Change.bind(this);
 		this.onChartShapeChange = this.onChartShapeChange.bind(this);
+		this.onChartStyleChange = this.onChartStyleChange.bind(this);
+		this.onLifeModeChange = this.onLifeModeChange.bind(this);
 		this.onHouseStartModeChange = this.onHouseStartModeChange.bind(this);
+		this.onMoiraTransitTimeChanged = this.onMoiraTransitTimeChanged.bind(this);
+		this.onMoiraTransitGodsToggle = this.onMoiraTransitGodsToggle.bind(this);
 
 		let houseStartMode = localStorage.getItem('suzhanHouseStartMode');
 		if(houseStartMode !== undefined && houseStartMode !== null){
@@ -133,6 +138,48 @@ class GuoLaoInput extends Component{
 		}
 	}
 
+	onChartStyleChange(val){
+		if(this.props.onChartStyleChange){
+			this.props.onChartStyleChange(val);
+		}
+	}
+
+	onLifeModeChange(val){
+		if(this.props.onFieldsChange){
+			let dt = this.tmHook.getValue().value;
+			this.props.onFieldsChange({
+				guolaoLifeMode: {
+					value: normalizeGuolaoLifeMode(val),
+				},
+				date: {
+					value: dt.clone(),
+				},
+				time:{
+					value: dt.clone(),
+				},
+				ad:{
+					value: dt.ad,
+				},
+				zone:{
+					value: dt.zone,
+				},
+
+			});
+		}
+	}
+
+	onMoiraTransitTimeChanged(value){
+		if(this.props.onMoiraTransitTimeChange){
+			this.props.onMoiraTransitTimeChange(value);
+		}
+	}
+
+	onMoiraTransitGodsToggle(){
+		if(this.props.onMoiraTransitGodsVisibleChange){
+			this.props.onMoiraTransitGodsVisibleChange(!this.props.showMoiraTransitGods);
+		}
+	}
+
 	onHouseStartModeChange(val){
 		SZConst.SZChart.houseStartMode = val;
 		localStorage.setItem('suzhanHouseStartMode', val);
@@ -217,6 +264,12 @@ class GuoLaoInput extends Component{
 		if(houseStartMode !== SZConst.SZHouseStart_ASC){
 			houseStartMode = SZConst.SZHouseStart_Bazi;
 		}
+		const chartStyle = this.props.chartStyle === GUOLAO_CHART_STYLE_PICK
+			? GUOLAO_CHART_STYLE_PICK
+			: (this.props.chartStyle === GUOLAO_CHART_STYLE_MOIRA ? GUOLAO_CHART_STYLE_MOIRA : GUOLAO_CHART_STYLE_CLASSIC);
+		const lifeMode = fields.guolaoLifeMode && fields.guolaoLifeMode.value !== undefined && fields.guolaoLifeMode.value !== null
+			? normalizeGuolaoLifeMode(fields.guolaoLifeMode.value)
+			: getStoredGuolaoLifeMode();
 
 		return (
 			<div className="horosa-guolao-input-stack">
@@ -254,6 +307,16 @@ class GuoLaoInput extends Component{
 							<Select value={fields.doubingSu28.value} onChange={this.onDoubingSu28Change} size='small'>
 								<Option value={0}>现实距星法</Option>
 								<Option value={1}>斗柄定房法</Option>
+								<Option value={2}>今制宿度</Option>
+								<Option value={3}>开禧宿度</Option>
+								<Option value={4}>郑式恒星制</Option>
+							</Select>
+						</label>
+						<label className="horosa-guolao-select-field">
+							<span>命度</span>
+							<Select value={lifeMode} onChange={this.onLifeModeChange} size='small'>
+								<Option value={GUOLAO_LIFE_MODE_ASC}>占星上升</Option>
+								<Option value={GUOLAO_LIFE_MODE_YUMAO}>遇卯安命</Option>
 							</Select>
 						</label>
 						<label className="horosa-guolao-select-field">
@@ -261,6 +324,14 @@ class GuoLaoInput extends Component{
 							<Select value={szshape} onChange={this.onChartShapeChange} size='small'>
 								<Option value={SZConst.SZChart_Circle}>圆形盘</Option>
 								<Option value={SZConst.SZChart_Square}>方形盘</Option>
+							</Select>
+						</label>
+						<label className="horosa-guolao-select-field">
+							<span>星盘样式</span>
+							<Select value={chartStyle} onChange={this.onChartStyleChange} size='small'>
+								<Option value={GUOLAO_CHART_STYLE_CLASSIC}>Horosa原盘</Option>
+								<Option value={GUOLAO_CHART_STYLE_MOIRA}>Moira圆盘</Option>
+								<Option value={GUOLAO_CHART_STYLE_PICK}>天星择日</Option>
 							</Select>
 						</label>
 						<label className="horosa-guolao-select-field">
@@ -272,6 +343,33 @@ class GuoLaoInput extends Component{
 						</label>
 					</div>
 				</div>
+
+				{chartStyle === GUOLAO_CHART_STYLE_MOIRA || chartStyle === GUOLAO_CHART_STYLE_PICK ? (
+					<div className="horosa-guolao-input-section horosa-guolao-moira-transit-section">
+						<div className="horosa-guolao-field-title">
+							<XQIcon name="clock" />
+							<span>{chartStyle === GUOLAO_CHART_STYLE_PICK ? '天星择日动盘' : 'Moira流年'}</span>
+						</div>
+						<SpaceTimePanel
+							className="horosa-guolao-moira-transit-time"
+							value={this.props.moiraTransitTime}
+							timeText={this.props.moiraTransitTime ? this.props.moiraTransitTime.format('YYYY-MM-DD HH:mm:ss') : ''}
+							onTimeChange={this.onMoiraTransitTimeChanged}
+							showLocation={false}
+							needZone={false}
+						/>
+						{chartStyle === GUOLAO_CHART_STYLE_MOIRA ? <div className="horosa-guolao-toggle-grid">
+							<XQToggle
+								size="small"
+								iconName="sideSwitch"
+								active={this.props.showMoiraTransitGods !== false}
+								onClick={this.onMoiraTransitGodsToggle}
+							>
+								流年神煞圈
+							</XQToggle>
+						</div> : null}
+					</div>
+				) : null}
 			</div>
 		);
 	}
