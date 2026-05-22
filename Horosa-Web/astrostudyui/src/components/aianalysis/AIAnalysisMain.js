@@ -3132,7 +3132,7 @@ function AIAnalysisMain(props){
 						</Select>
 					</Form.Item>
 					<Form.Item name="apiKey" label="API Key">
-						<Input.Password placeholder="留空表示不设置" />
+						<Input type="password" placeholder="留空表示不设置" />
 					</Form.Item>
 					<Form.Item name="baseUrl" label="Base URL">
 						<Input />

@@ -30,6 +30,7 @@ _FIXSTARS_PATH = os.path.join(_ROOT, "flatlib-ctrad2", "flatlib", "resources", "
 _BSC5_PATH = os.path.join(_ROOT, "astropy", "resources", "bsc5-horosa.json")
 _STAR_CACHE = None
 _BSC5_CACHE = None
+_BASE_STAR_CACHE = None
 
 
 ZODIAC_LABELS = [
@@ -309,6 +310,16 @@ def _read_bsc5_catalog():
     return stars
 
 
+def _base_star_catalog():
+    global _BASE_STAR_CACHE
+    if _BASE_STAR_CACHE is not None:
+        return _BASE_STAR_CACHE
+    stars = list(_read_bsc5_catalog() or _read_star_catalog())
+    stars.sort(key=lambda rec: rec.get("mag", 99))
+    _BASE_STAR_CACHE = stars
+    return stars
+
+
 def _plain_obj(obj):
     res = {
         "id": getattr(obj, "id", ""),
@@ -334,15 +345,14 @@ def _plain_obj(obj):
     return res
 
 
-def _build_catalog_stars(perchart, limit):
+def _build_catalog_stars(perchart, limit, catalog=None):
     stars = []
-    catalog = _read_bsc5_catalog() or _read_star_catalog()
+    catalog = catalog if catalog is not None else _base_star_catalog()
     for star in catalog:
         item = dict(star)
         item.update(_altaz_from_equatorial(perchart.dateTime.jd, perchart.pos, item["ra"], item["decl"]))
         item.update(_visibility_info(item))
         stars.append(item)
-    stars.sort(key=lambda rec: rec.get("mag", 99))
     if limit and len(stars) > limit:
         return stars[:limit]
     return stars
@@ -499,6 +509,7 @@ class PlanetariumSrv:
             include_catalog = catalog_limit != 0
             include_overlays = data.get("includeOverlays", True) is not False
             include_traditions = data.get("includeTraditions", True) is not False
+            base_catalog = _base_star_catalog() if include_catalog else None
 
             bodies = [_plain_obj(item) for item in _chart_objects(perchart)]
             sun_body = next((item for item in bodies if item.get("id") == const.SUN), None)
@@ -511,7 +522,7 @@ class PlanetariumSrv:
             for group in (su28, beidou, fixed_stars):
                 for item in group:
                     item.update(_visibility_info(item, sun_altitude))
-            catalog_stars = _build_catalog_stars(perchart, catalog_limit) if include_catalog else []
+            catalog_stars = _build_catalog_stars(perchart, catalog_limit, base_catalog) if include_catalog else []
             for item in catalog_stars:
                 item.update(_visibility_info(item, sun_altitude))
             moon_phase = _moon_phase_info(bodies)
@@ -564,9 +575,9 @@ class PlanetariumSrv:
                     "moonPhase": moon_phase,
                 },
                 "meta": {
-                    "catalogCount": len(_read_bsc5_catalog() or _read_star_catalog()),
-                    "bsc5CatalogCount": len(_read_bsc5_catalog()),
-                    "swissFixedStarCount": len(_read_star_catalog()),
+                    "catalogCount": len(base_catalog) if base_catalog is not None else 0,
+                    "bsc5CatalogCount": len(_read_bsc5_catalog()) if include_catalog else 0,
+                    "swissFixedStarCount": len(_read_star_catalog()) if include_catalog else 0,
                     "renderedCatalogCount": len(catalog_stars),
                     "lightweight": not include_catalog or not include_overlays or not include_traditions,
                     "hsys": getHSys(data.get("hsys", 1)),

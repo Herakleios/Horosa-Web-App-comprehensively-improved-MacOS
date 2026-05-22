@@ -11,7 +11,12 @@ const BODY_RADIUS = 820;
 const STAR_RADIUS = 780;
 const LINE_RADIUS = 760;
 const OBSERVER_EYE_HEIGHT = 5;
+const GROUND_MIN_FOV = 0.18;
+const GROUND_MAX_FOV = 1.62;
+const ORBIT_MIN_RADIUS = 80;
+const ORBIT_MAX_RADIUS = 2400;
 const PLANETARIUM_PERF_KEY = '__horosaPlanetariumPerf';
+let planetariumStateCache = null;
 
 const BODY_LABELS = {
 	Sun: '太阳',
@@ -27,6 +32,22 @@ const BODY_LABELS = {
 	Pluto: '冥王星',
 	'North Node': '北交点',
 	'South Node': '南交点',
+};
+
+const BODY_ENGLISH_LABELS = {
+	Sun: 'Sun',
+	Moon: 'Moon',
+	Earth: 'Earth',
+	Mercury: 'Mercury',
+	Venus: 'Venus',
+	Mars: 'Mars',
+	Jupiter: 'Jupiter',
+	Saturn: 'Saturn',
+	Uranus: 'Uranus',
+	Neptune: 'Neptune',
+	Pluto: 'Pluto',
+	'North Node': 'North Node',
+	'South Node': 'South Node',
 };
 
 const BODY_COLORS = {
@@ -53,17 +74,39 @@ const ALWAYS_LABELED_BODY_IDS = new Set([
 	'Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto',
 ]);
 
+const BODY_VISUALS = {
+	Sun: { emissive: 1.35, haloScale: 2.85, haloAlpha: 0.2 },
+	Moon: { emissive: 0.92, haloScale: 1.75, haloAlpha: 0.1 },
+	Mercury: { emissive: 0.58, haloScale: 1.55, haloAlpha: 0.07 },
+	Venus: { emissive: 0.9, haloScale: 1.85, haloAlpha: 0.13 },
+	Mars: { emissive: 0.72, haloScale: 1.7, haloAlpha: 0.1 },
+	Jupiter: { emissive: 0.78, haloScale: 1.75, haloAlpha: 0.11 },
+	Saturn: { emissive: 0.72, haloScale: 1.72, haloAlpha: 0.1 },
+	Uranus: { emissive: 0.7, haloScale: 1.64, haloAlpha: 0.09 },
+	Neptune: { emissive: 0.72, haloScale: 1.64, haloAlpha: 0.09 },
+	Pluto: { emissive: 0.56, haloScale: 1.5, haloAlpha: 0.06 },
+};
+
 const DEFAULT_LAYERS = {
 	stars: true,
 	bodies: true,
 	horizon: true,
 	equator: true,
 	ecliptic: true,
+	zodiacSectors: true,
 	houses: true,
 	su28: true,
+	su28Sectors: true,
 	beidou: true,
 	qizheng: true,
 };
+
+const SU28_PALACE_COLORS = [
+	new BABYLON.Color3(0.34, 0.78, 0.92),
+	new BABYLON.Color3(0.44, 0.82, 0.58),
+	new BABYLON.Color3(0.94, 0.74, 0.38),
+	new BABYLON.Color3(0.78, 0.58, 0.96),
+];
 
 function degToRad(deg){
 	return (Number(deg) || 0) * Math.PI / 180;
@@ -166,6 +209,24 @@ function observerFromFields(fields, data){
 	return { lat, lon };
 }
 
+function observerFromData(observer){
+	const src = observer || {};
+	const firstGeo = (...values)=>{
+		for(let i = 0; i < values.length; i += 1){
+			const parsed = parseGeoDegree(values[i]);
+			if(parsed !== null && parsed !== undefined && Number.isFinite(parsed)){
+				return parsed;
+			}
+		}
+		return 0;
+	};
+	return {
+		lat: firstGeo(src.gpsLat, src.lat),
+		lon: firstGeo(src.gpsLon, src.lon),
+		jd: src.jd,
+	};
+}
+
 function gmstDegrees(jd){
 	const t = (Number(jd) - 2451545.0) / 36525;
 	return normalizeDegrees(280.46061837 + 360.98564736629 * (Number(jd) - 2451545.0) + 0.000387933 * t * t - (t * t * t) / 38710000);
@@ -258,8 +319,105 @@ function formatDeg(val){
 	return `${Math.round(Number(val) * 1000) / 1000}°`;
 }
 
+function formatNumber(val, digits = 3, suffix = ''){
+	if(val === undefined || val === null || val === '' || Number.isNaN(Number(val))){
+		return '--';
+	}
+	const factor = Math.pow(10, digits);
+	return `${Math.round(Number(val) * factor) / factor}${suffix}`;
+}
+
+function formatMag(val){
+	if(val === undefined || val === null || val === '' || Number.isNaN(Number(val))){
+		return '--';
+	}
+	return `${Math.round(Number(val) * 100) / 100}`;
+}
+
+function formatRa(val){
+	if(val === undefined || val === null || Number.isNaN(Number(val))){
+		return '--';
+	}
+	const total = Math.round(((((Number(val) / 15) % 24) + 24) % 24) * 3600) % (24 * 3600);
+	const h = Math.floor(total / 3600);
+	const m = Math.floor((total % 3600) / 60);
+	const s = total % 60;
+	return `${h}h ${`${m}`.padStart(2, '0')}m ${`${s}`.padStart(2, '0')}s`;
+}
+
+function valuePresent(value){
+	return !(value === undefined || value === null || value === '' || value === '--');
+}
+
+function joinParts(parts, sep = ' · '){
+	return (parts || []).filter(valuePresent).join(sep);
+}
+
+function angularDistance(start, end){
+	return normalizeDegrees(Number(end) - Number(start));
+}
+
+function circularMidpoint(start, end){
+	return normalizeDegrees(Number(start) + angularDistance(start, end) / 2);
+}
+
+function su28DisplayName(item){
+	const name = item && (item.name || item.id);
+	if(!name){
+		return '宿';
+	}
+	return `${name}`.indexOf('宿') >= 0 ? `${name}` : `${name}宿`;
+}
+
+function houseDisplayName(item, idx){
+	const raw = item && (item.id || item.name || item.label);
+	const match = raw !== undefined && raw !== null ? `${raw}`.match(/\d+/) : null;
+	const num = match ? Number(match[0]) : idx + 1;
+	return `${Number.isFinite(num) && num > 0 ? num : idx + 1}宫`;
+}
+
+function preferredVisiblePoint(points){
+	const visible = (points || []).filter((point)=>Number(point && point.altitudeAppa) > 0);
+	const pool = visible.length ? visible : (points || []);
+	if(!pool.length){
+		return null;
+	}
+	return pool[Math.floor(pool.length / 2)];
+}
+
+function allAboveHorizon(items){
+	return (items || []).every((item)=>Number(item && item.altitudeAppa) > 0);
+}
+
+function shouldShowModeBoundItem(item, viewMode){
+	if(!item || !item.visibilityMode){
+		return true;
+	}
+	if(item.visibilityMode === 'allAbove'){
+		return viewMode === 'orbit' || allAboveHorizon(item.lastProjectedSources || item.visibilitySources);
+	}
+	if(item.visibilityMode === 'sourceAbove'){
+		const source = item.lastProjectedSource || item.lastProjected || item.source;
+		return viewMode === 'orbit' || Number(source && source.altitudeAppa) > 0;
+	}
+	return true;
+}
+
 function bodyName(item){
-	return BODY_LABELS[item.id] || item.name || item.id || '天体';
+	if(!item){
+		return '天体';
+	}
+	return BODY_LABELS[item.id] || item.displayName || item.name || item.properName || item.bayer || item.id || '天体';
+}
+
+function bodyEnglishName(item){
+	if(!item){
+		return '--';
+	}
+	if(BODY_ENGLISH_LABELS[item.id]){
+		return BODY_ENGLISH_LABELS[item.id];
+	}
+	return joinParts([item.name && item.name !== item.displayName ? item.name : null, item.id], ' / ') || '--';
 }
 
 function objectType(item){
@@ -267,21 +425,178 @@ function objectType(item){
 		return '--';
 	}
 	if(item.kind === 'catalogStar'){
-		return '恒星';
+		return '裸眼恒星';
 	}
 	if(item.layer === 'su28'){
-		return '二十八宿';
+		return '二十八宿星点';
 	}
 	if(item.layer === 'beidou'){
-		return '北斗';
+		return '北斗星点';
 	}
 	if(item.layer === 'body'){
 		if(item.id === 'Earth'){
 			return '地球/观测点';
 		}
-		return item.id === 'Sun' || item.id === 'Moon' ? '日月' : '行星/交点';
+		if(item.id === 'Sun'){
+			return '太阳';
+		}
+		if(item.id === 'Moon'){
+			return '月亮';
+		}
+		if(['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn'].indexOf(item.id) >= 0){
+			return '七政行星';
+		}
+		if(['Uranus', 'Neptune', 'Pluto'].indexOf(item.id) >= 0){
+			return '现代外行星';
+		}
+		if(item.id === 'North Node' || item.id === 'South Node'){
+			return '月交点';
+		}
+		return item.type || '天体';
 	}
 	return item.type || item.kind || item.layer || '--';
+}
+
+function layerLabel(item){
+	const layer = item && item.layer;
+	return {
+		body: '太阳系天体',
+		stars: '裸眼恒星',
+		su28: '二十八宿',
+		beidou: '北斗',
+	}[layer] || layer || '--';
+}
+
+function catalogIdText(item){
+	if(!item){
+		return '--';
+	}
+	const parts = [];
+	if(item.id){ parts.push(item.id); }
+	if(item.bayer){ parts.push(`拜耳 ${item.bayer}`); }
+	if(item.flamsteed){ parts.push(`弗兰斯蒂德 ${item.flamsteed}`); }
+	if(item.constellation){ parts.push(`星座 ${item.constellation}`); }
+	return parts.join(' / ') || '--';
+}
+
+function zodiacPositionText(item){
+	if(!item){
+		return '--';
+	}
+	if(valuePresent(item.zodiacSign) || valuePresent(item.zodiacDegree)){
+		return `${item.zodiacSign || ''} ${formatDeg(item.zodiacDegree)}`.trim();
+	}
+	if(valuePresent(item.sign) || valuePresent(item.signlon)){
+		return `${item.sign || ''} ${formatDeg(item.signlon)}`.trim();
+	}
+	return '--';
+}
+
+function skyPositionText(item){
+	return joinParts([
+		`高度 ${formatDeg(item && item.altitudeAppa)}`,
+		`方位 ${formatDeg(item && item.azimuth)}`,
+	]);
+}
+
+function equatorialText(item){
+	return joinParts([
+		`赤经 ${formatRa(item && item.ra)}`,
+		`赤纬 ${formatDeg(item && item.decl)}`,
+	]);
+}
+
+function eclipticText(item){
+	return joinParts([
+		`黄经 ${formatDeg(item && item.lon)}`,
+		`黄纬 ${formatDeg(item && item.lat)}`,
+	]);
+}
+
+function spectralText(item){
+	return joinParts([
+		item && item.spectralClass ? `光谱 ${item.spectralClass}` : null,
+		item && valuePresent(item.colorTemperature) ? `色温 ${Math.round(Number(item.colorTemperature))}K` : null,
+		item && valuePresent(item.colorIndex) ? `B-V ${formatNumber(item.colorIndex, 2)}` : null,
+	]);
+}
+
+function moonPhaseText(phase){
+	if(!phase){
+		return '--';
+	}
+	return joinParts([
+		phase.phaseName || phase.name,
+		valuePresent(phase.illumination) ? `照明 ${Math.round(Number(phase.illumination) * 100)}%` : null,
+		valuePresent(phase.ageDays) ? `月龄 ${formatNumber(phase.ageDays, 1)}天` : null,
+		valuePresent(phase.phaseAngle) ? `相位角 ${formatDeg(phase.phaseAngle)}` : null,
+	]);
+}
+
+function objectDescription(item){
+	if(!item){
+		return '';
+	}
+	if(item.kind === 'catalogStar'){
+		return '裸眼恒星星表中的恒星，位置按当前时间与观测地投影到地平坐标。';
+	}
+	if(item.layer === 'su28'){
+		return '二十八宿图层星点，随当前时间与观测地投影到真实可见天空。';
+	}
+	if(item.layer === 'beidou'){
+		return '北斗图层星点，连线与星点共同随天球旋转更新。';
+	}
+	if(item.layer === 'body'){
+		if(item.id === 'Sun' || item.id === 'Moon' || ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'].indexOf(item.id) >= 0){
+			return `${bodyName(item)}的位置来自瑞士星历，并结合当前经纬度换算为地平坐标。`;
+		}
+		if(item.id === 'North Node' || item.id === 'South Node'){
+			return `${bodyName(item)}为月球轨道与黄道的交点，按当前星盘时间显示其黄道位置。`;
+		}
+	}
+	return '';
+}
+
+function detailRowsForItem(item, moonPhase){
+	if(!item){
+		return [];
+	}
+	const isBody = item.layer === 'body';
+	const isStar = item.kind === 'catalogStar' || item.layer === 'stars';
+	const isTraditional = item.layer === 'su28' || item.layer === 'beidou';
+	const chartPosition = joinParts([
+		zodiacPositionText(item),
+		valuePresent(item.house) ? `第${item.house}宫` : null,
+		valuePresent(item.su28) ? `${item.su28}` : null,
+	]);
+	const rows = [
+		['具体名称', bodyName(item)],
+		['类型', objectType(item)],
+		['图层', layerLabel(item)],
+		['编号/别名', isStar ? catalogIdText(item) : bodyEnglishName(item)],
+		['可见性', visibilityText(item)],
+		['地平坐标', skyPositionText(item)],
+		['赤道坐标', equatorialText(item)],
+		['黄道坐标', eclipticText(item)],
+		['星盘位置', chartPosition],
+		['星等', formatMag(item.mag)],
+		['光谱/色温', spectralText(item)],
+		['黄经速度', valuePresent(item.lonspeed) ? `${formatNumber(item.lonspeed, 4)}°/日` : '--'],
+	];
+	if(item.id === 'Moon'){
+		rows.push(['月相', moonPhaseText(moonPhase)]);
+	}
+	if(isTraditional && valuePresent(item.su28)){
+		rows.push(['所属宿', item.su28]);
+	}
+	if(isBody && valuePresent(item.sign)){
+		rows.push(['占星星座', joinParts([item.sign, valuePresent(item.signlon) ? formatDeg(item.signlon) : null], ' ')]);
+	}
+	rows.push(['说明', objectDescription(item)]);
+	return rows.filter((row)=>{
+		const value = row[1];
+		return valuePresent(value) && value !== '高度 -- · 方位 --' && value !== '赤经 -- · 赤纬 --' && value !== '黄经 -- · 黄纬 --';
+	});
 }
 
 function visibilityText(item){
@@ -583,6 +898,15 @@ function buildRequestParams(fields, time){
 	};
 }
 
+function buildInitialSceneParams(fields, time){
+	return {
+		...buildRequestParams(fields, time),
+		starLimit: 0,
+		includeOverlays: false,
+		includeTraditions: false,
+	};
+}
+
 function buildPlaybackSyncParams(fields, time){
 	return {
 		...buildRequestParams(fields, time),
@@ -601,11 +925,38 @@ function buildSceneSyncParams(fields, time){
 	};
 }
 
+function clonePlanetariumState(data){
+	if(!data){
+		return null;
+	}
+	try{
+		return JSON.parse(JSON.stringify(data));
+	}catch(err){
+		return data;
+	}
+}
+
+function cachePlanetariumState(data){
+	if(!data || data.err){
+		return;
+	}
+	const rendered = data.meta && Number(data.meta.renderedCatalogCount || 0);
+	if(rendered <= 0){
+		return;
+	}
+	planetariumStateCache = clonePlanetariumState(data);
+}
+
+function getCachedPlanetariumState(){
+	return clonePlanetariumState(planetariumStateCache);
+}
+
 class PlanetariumRenderer {
-	constructor(canvas, onPick, onMetrics){
+	constructor(canvas, onPick, onMetrics, onInteraction){
 		this.canvas = canvas;
 		this.onPick = onPick;
 		this.onMetrics = onMetrics;
+		this.onInteraction = onInteraction;
 		this.engine = new BABYLON.Engine(canvas, true, {
 			preserveDrawingBuffer: false,
 			stencil: false,
@@ -650,6 +1001,8 @@ class PlanetariumRenderer {
 		if(this.groundCamera.inputs && this.groundCamera.inputs.removeByType){
 			this.groundCamera.inputs.removeByType('FreeCameraKeyboardMoveInput');
 			this.groundCamera.inputs.removeByType('FreeCameraGamepadInput');
+			this.groundCamera.inputs.removeByType('FreeCameraMouseInput');
+			this.groundCamera.inputs.removeByType('FreeCameraTouchInput');
 		}
 
 		this.transitionCamera = new CameraCtor(
@@ -676,10 +1029,13 @@ class PlanetariumRenderer {
 			BABYLON.Vector3.Zero(),
 			this.scene,
 		);
-		this.orbitCamera.lowerRadiusLimit = 180;
-		this.orbitCamera.upperRadiusLimit = 1400;
-		this.orbitCamera.wheelPrecision = 45;
+		this.orbitCamera.lowerRadiusLimit = ORBIT_MIN_RADIUS;
+		this.orbitCamera.upperRadiusLimit = ORBIT_MAX_RADIUS;
+		this.orbitCamera.wheelPrecision = 32;
 		this.orbitCamera.panningSensibility = 0;
+		if(this.orbitCamera.inputs && this.orbitCamera.inputs.clear){
+			this.orbitCamera.inputs.clear();
+		}
 
 		this.wheelHandler = (evt)=>{
 			if(!this.camera){
@@ -687,12 +1043,68 @@ class PlanetariumRenderer {
 			}
 			evt.preventDefault();
 			if(this.viewMode === 'orbit'){
-				this.camera.radius = clamp(this.camera.radius + (evt.deltaY > 0 ? 42 : -42), 180, 1400);
+				this.camera.radius = clamp(this.camera.radius + (evt.deltaY > 0 ? 64 : -64), ORBIT_MIN_RADIUS, ORBIT_MAX_RADIUS);
 				return;
 			}
-			this.camera.fov = clamp(this.camera.fov + (evt.deltaY > 0 ? 0.06 : -0.06), 0.34, 1.24);
+			this.camera.fov = clamp(this.camera.fov + (evt.deltaY > 0 ? 0.075 : -0.075), GROUND_MIN_FOV, GROUND_MAX_FOV);
 		};
 		this.canvas.addEventListener('wheel', this.wheelHandler, { passive: false });
+		this.pointerDrag = null;
+		this.pointerDownHandler = (evt)=>{
+			if(!this.camera || this.viewTransition || evt.button !== 0){
+				return;
+			}
+			if(this.onInteraction){
+				this.onInteraction();
+			}
+			this.pointerDrag = {
+				id: evt.pointerId,
+				x: evt.clientX,
+				y: evt.clientY,
+			};
+			if(this.canvas.setPointerCapture){
+				this.canvas.setPointerCapture(evt.pointerId);
+			}
+		};
+		this.pointerMoveHandler = (evt)=>{
+			if(!this.pointerDrag || this.pointerDrag.id !== evt.pointerId || !this.camera || this.viewTransition){
+				return;
+			}
+			const dx = evt.clientX - this.pointerDrag.x;
+			const dy = evt.clientY - this.pointerDrag.y;
+			this.pointerDrag.x = evt.clientX;
+			this.pointerDrag.y = evt.clientY;
+			evt.preventDefault();
+			if(this.viewMode === 'orbit'){
+				if(this.onInteraction){
+					this.onInteraction();
+				}
+				this.orbitCamera.alpha -= dx * 0.006;
+				this.orbitCamera.beta = clamp(this.orbitCamera.beta - dy * 0.0045, 0.04, Math.PI - 0.04);
+				return;
+			}
+			if(this.onInteraction){
+				this.onInteraction();
+			}
+			this.groundCamera.rotation.y += dx * 0.0042;
+			this.groundCamera.rotation.x = clamp(this.groundCamera.rotation.x + dy * 0.0036, -Math.PI * 0.49, Math.PI * 0.49);
+		};
+		this.pointerUpHandler = (evt)=>{
+			if(this.pointerDrag && this.pointerDrag.id === evt.pointerId){
+				this.pointerDrag = null;
+				if(this.canvas.releasePointerCapture){
+					try{
+						this.canvas.releasePointerCapture(evt.pointerId);
+					}catch(err){
+						// Pointer capture may already be released by the browser.
+					}
+				}
+			}
+		};
+		this.canvas.addEventListener('pointerdown', this.pointerDownHandler);
+		this.canvas.addEventListener('pointermove', this.pointerMoveHandler, { passive: false });
+		this.canvas.addEventListener('pointerup', this.pointerUpHandler);
+		this.canvas.addEventListener('pointercancel', this.pointerUpHandler);
 
 		const light = new BABYLON.HemisphericLight('planetarium-light', new BABYLON.Vector3(0, 1, 0), this.scene);
 		light.intensity = 0.38;
@@ -836,6 +1248,7 @@ class PlanetariumRenderer {
 		this.setGroundElementsEnabled(nextMode === 'ground');
 		nextCamera.attachControl(this.canvas, true);
 		this.applyLabelVisibility();
+		this.applyModeBoundVisibility();
 	}
 
 	animateViewTransition(nextMode, nextCamera){
@@ -930,6 +1343,7 @@ class PlanetariumRenderer {
 		}
 		this.setGroundElementsEnabled(nextMode === 'ground');
 		this.applyLabelVisibility();
+		this.applyModeBoundVisibility();
 	}
 
 	clearData(){
@@ -1050,30 +1464,36 @@ class PlanetariumRenderer {
 		if(!TEXTURED_BODY_IDS.has(id)){
 			return this.material(`body-mat-${id}`, color, 1);
 		}
+		const visual = BODY_VISUALS[id] || { emissive: 0.42 };
 		const mat = new BABYLON.StandardMaterial(`body-surface-mat-${id}-${Math.random()}`, this.scene);
 		const texture = this.createSurfaceTexture(id, id === 'Moon' ? this.currentMoonPhase : null);
 		mat.diffuseTexture = texture;
-		mat.emissiveTexture = id === 'Sun' ? texture : null;
-		mat.diffuseColor = color;
-		mat.specularColor = id === 'Sun' ? new BABYLON.Color3(0.9, 0.45, 0.16) : new BABYLON.Color3(0.05, 0.06, 0.08);
+		mat.emissiveTexture = texture;
+		mat.diffuseColor = color.scale(id === 'Sun' ? 1.18 : 1.08);
+		mat.specularColor = id === 'Sun'
+			? new BABYLON.Color3(1, 0.62, 0.24)
+			: color.scale(0.22);
 		mat.emissiveColor = id === 'Sun'
-			? new BABYLON.Color3(1, 0.48, 0.12)
-			: color.scale(id === 'Moon' ? 0.72 : 0.18);
-		mat.disableLighting = id === 'Sun';
+			? new BABYLON.Color3(1, 0.56, 0.16)
+			: color.scale(visual.emissive);
+		mat.disableLighting = true;
 		mat.useAlphaFromDiffuseTexture = id === 'Moon';
 		return mat;
 	}
 
 	createBodyHalo(mesh, body, group){
 		const id = body.id;
-		if(id !== 'Sun' && id !== 'Venus' && id !== 'Jupiter'){
+		const visual = BODY_VISUALS[id];
+		if(!visual){
 			return;
 		}
 		const color = BODY_COLORS[id] || new BABYLON.Color3(1, 1, 1);
-		const scale = id === 'Sun' ? 2.2 : 1.55;
+		const scale = visual.haloScale || 1.55;
 		const halo = BABYLON.MeshBuilder.CreateSphere(`body-halo-${id}`, { diameter: mesh.getBoundingInfo().boundingSphere.radius * 2 * scale, segments: 24 }, this.scene);
 		halo.position.copyFrom(mesh.position);
-		halo.material = this.material(`body-halo-mat-${id}`, color, id === 'Sun' ? 0.18 : 0.08);
+		halo.material = this.material(`body-halo-mat-${id}`, color, visual.haloAlpha || 0.08);
+		halo.material.alphaMode = BABYLON.Engine.ALPHA_ADD;
+		halo.renderingGroupId = 1;
 		halo.parent = group;
 		halo.isPickable = false;
 		this.registerFollowerMesh(halo, id, ()=>BABYLON.Vector3.Zero());
@@ -1149,8 +1569,10 @@ class PlanetariumRenderer {
 		this.clearDynamicData(!hasStarCatalog && !!this.starPcs);
 		this.createCardinals();
 		this.updateStars(data.stars && data.stars.catalog ? data.stars.catalog : []);
-		this.createOverlayLines(data.overlays || {});
+		this.createOverlayLines(data.overlays || {}, data.observer || {});
+		this.createNorthCelestialPole(data.observer || {});
 		this.createBodies(data.bodies || []);
+		this.createSu28Sectors(data.traditions && data.traditions.su28 ? data.traditions.su28 : [], data.observer || {});
 		this.createTraditionalLayer('su28', data.traditions && data.traditions.su28 ? data.traditions.su28 : [], new BABYLON.Color3(0.9, 0.68, 0.36), 4.8);
 		this.createTraditionalLayer('beidou', data.traditions && data.traditions.beidou ? data.traditions.beidou : [], new BABYLON.Color3(0.52, 0.82, 1), 6.2);
 		this.applyLayerVisibility();
@@ -1215,7 +1637,15 @@ class PlanetariumRenderer {
 			if(!projected || !item.mesh){
 				return;
 			}
+			item.lastProjectedSource = projected;
 			item.mesh.position = toSkyVector(projected, item.radius);
+			if(item.visibilityMode === 'allAbove' && item.visibilitySources && item.visibilitySources.length){
+				const projectedVisibility = item.visibilitySources.map((source)=>projectedEquatorialItem(source, jd, observer));
+				item.lastProjectedSources = projectedVisibility;
+				item.mesh.setEnabled(this.layerAllowsMesh(item.mesh) && shouldShowModeBoundItem(item, this.viewMode));
+			}else if(item.visibilityMode === 'sourceAbove'){
+				item.mesh.setEnabled(this.layerAllowsMesh(item.mesh) && shouldShowModeBoundItem(item, this.viewMode));
+			}
 			if(item.mesh.metadata && item.mesh.metadata.body){
 				item.mesh.metadata.body = {
 					...item.mesh.metadata.body,
@@ -1238,7 +1668,12 @@ class PlanetariumRenderer {
 					toSkyVector(projected, item.innerRadius),
 				];
 			}else{
-				vectors = item.sources.map((source)=>toSkyVector(projectedEquatorialItem(source, jd, observer), item.radius));
+				const projectedSources = item.sources.map((source)=>projectedEquatorialItem(source, jd, observer));
+				if(item.visibilityMode === 'allAbove'){
+					item.lastProjectedSources = projectedSources;
+					item.mesh.setEnabled(this.layerAllowsMesh(item.mesh) && shouldShowModeBoundItem(item, this.viewMode));
+				}
+				vectors = projectedSources.map((projected)=>toSkyVector(projected, item.radius));
 			}
 			BABYLON.MeshBuilder.CreateLines(item.mesh.name, {
 				points: vectors,
@@ -1291,18 +1726,18 @@ class PlanetariumRenderer {
 		this.groups = keep;
 	}
 
-	registerProjectableMesh(mesh, source, radius){
+	registerProjectableMesh(mesh, source, radius, options = null){
 		if(!mesh || !source){
 			return;
 		}
-		this.projectableMeshes.push({ mesh, source, radius });
+		this.projectableMeshes.push({ mesh, source, radius, ...(options || {}) });
 	}
 
-	registerProjectableLine(mesh, sources, radius, innerRadius){
+	registerProjectableLine(mesh, sources, radius, innerRadius, options = null){
 		if(!mesh || !sources || !sources.length){
 			return;
 		}
-		this.projectableLines.push({ mesh, sources, radius, innerRadius });
+		this.projectableLines.push({ mesh, sources, radius, innerRadius, ...(options || {}) });
 	}
 
 	registerFollowerMesh(mesh, targetId, offsetFactory){
@@ -1508,7 +1943,8 @@ class PlanetariumRenderer {
 		return line;
 	}
 
-	createOverlayLines(overlays){
+	createOverlayLines(overlays, observer){
+		const normalizedObserver = observerFromData(observer);
 		const group = this.makeGroup('overlay-layer');
 		this.createLine('horizon', overlays.horizon && overlays.horizon.points, new BABYLON.Color3(0.48, 0.82, 0.96), 0.5, group, LINE_RADIUS);
 		this.createLine('meridian', overlays.meridian && overlays.meridian.points, new BABYLON.Color3(0.48, 0.68, 0.88), 0.18, group, LINE_RADIUS - 2);
@@ -1517,12 +1953,230 @@ class PlanetariumRenderer {
 		(overlays.houses || []).forEach((item)=>{
 			this.createShortRadialLine(`house-${item.id}`, item, new BABYLON.Color3(0.48, 0.82, 0.68), 0.22, group, LINE_RADIUS + 20, LINE_RADIUS - 46, true);
 		});
+		this.createHouseLabels(overlays.houses || [], normalizedObserver, group);
+		this.createZodiacSectors(overlays.zodiac || [], normalizedObserver);
+	}
+
+	createHouseLabels(houses, observer, parent){
+		const list = (houses || []).filter((item)=>item && Number.isFinite(Number(item.lon)));
+		if(list.length < 2){
+			return;
+		}
+		const radius = LINE_RADIUS - 12;
+		const jd = observer && observer.jd ? observer.jd : 2451545;
+		list.forEach((item, idx)=>{
+			const next = list[(idx + 1) % list.length];
+			if(!next || !Number.isFinite(Number(next.lon))){
+				return;
+			}
+			const label = houseDisplayName(item, idx);
+			const labelLon = circularMidpoint(item.lon, next.lon);
+			const eq = eclipticToEquatorial(labelLon, 0) || { ra: labelLon, decl: 0 };
+			const source = {
+				id: `house-label-${idx + 1}`,
+				name: label,
+				lon: labelLon,
+				lat: 0,
+				ra: eq.ra,
+				decl: eq.decl,
+			};
+			const projected = projectedEquatorialItem(source, jd, observer || { lat: 0, lon: 0 });
+			const text = this.createTextPlane(label, 48, '#d7ffe4', 'rgba(0,0,0,0)');
+			text.name = `house-label-${idx + 1}`;
+			text.position = toSkyVector(projected, radius);
+			text.parent = parent;
+			text.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+			text.metadata = { labelKind: 'houseSector' };
+			text.setEnabled(this.viewMode === 'orbit' || Number(projected && projected.altitudeAppa) > 0);
+			this.registerProjectableMesh(text, source, radius, {
+				visibilityMode: 'sourceAbove',
+				lastProjectedSource: projected,
+			});
+		});
+	}
+
+	createZodiacSectors(zodiacItems, observer){
+		if(!zodiacItems || !zodiacItems.length){
+			return;
+		}
+		const group = this.makeGroup('zodiac-sector-layer');
+		const labelRadius = LINE_RADIUS + 30;
+		zodiacItems.forEach((item, idx)=>{
+			const points = item && item.points ? item.points : [];
+			if(points.length < 2){
+				return;
+			}
+			const label = item.label || `星座${idx + 1}`;
+			const anchor = preferredVisiblePoint(points) || points[Math.floor(points.length / 2)];
+			const anchorLon = Number(anchor && anchor.lon);
+			const labelLon = Number.isFinite(anchorLon)
+				? anchorLon
+				: (Number.isFinite(Number(item.startLon)) && Number.isFinite(Number(item.endLon))
+					? circularMidpoint(item.startLon, item.endLon)
+					: 0);
+			const labelLat = 2.2;
+			const eq = eclipticToEquatorial(labelLon, labelLat) || { ra: labelLon, decl: 0 };
+			const labelSource = {
+				lon: labelLon,
+				lat: labelLat,
+				ra: eq.ra,
+				decl: eq.decl,
+				name: `${label}座`,
+			};
+			const text = this.createTextPlane(`${label}座`, 52, '#ffe9a8', 'rgba(0,0,0,0)');
+			text.position = toSkyVector(projectedEquatorialItem(labelSource, observer && observer.jd ? observer.jd : 2451545, observer || { lat: 0, lon: 0 }), labelRadius);
+			text.parent = group;
+			text.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+			text.metadata = { labelKind: 'zodiacSector' };
+			this.registerProjectableMesh(text, labelSource, labelRadius);
+		});
+	}
+
+	createNorthCelestialPole(observer){
+		const normalizedObserver = observerFromData(observer);
+		const group = this.makeGroup('north-pole-layer');
+		const source = {
+			id: 'north-celestial-pole',
+			name: '北天极',
+			ra: 0,
+			decl: 90,
+		};
+		const radius = LINE_RADIUS + 86;
+		const projected = projectedEquatorialItem(source, normalizedObserver && normalizedObserver.jd ? normalizedObserver.jd : 2451545, normalizedObserver);
+		const position = toSkyVector(projected, radius);
+		const marker = BABYLON.MeshBuilder.CreateSphere('north-celestial-pole-marker', { diameter: 18, segments: 24 }, this.scene);
+		marker.position.copyFrom(position);
+		marker.material = this.material('north-celestial-pole-marker-mat', new BABYLON.Color3(0.7, 0.92, 1), 0.96);
+		marker.parent = group;
+		marker.isPickable = false;
+		marker.renderingGroupId = 2;
+		this.registerProjectableMesh(marker, source, radius);
+
+		const halo = BABYLON.MeshBuilder.CreateSphere('north-celestial-pole-halo', { diameter: 46, segments: 24 }, this.scene);
+		halo.position.copyFrom(position);
+		halo.material = this.material('north-celestial-pole-halo-mat', new BABYLON.Color3(0.32, 0.78, 1), 0.22);
+		halo.material.alphaMode = BABYLON.Engine.ALPHA_ADD;
+		halo.parent = group;
+		halo.isPickable = false;
+		halo.renderingGroupId = 1;
+		this.registerFollowerMesh(halo, 'north-celestial-pole-marker', ()=>BABYLON.Vector3.Zero());
+		this.bodyMeshes['north-celestial-pole-marker'] = marker;
+
+		const crossColor = new BABYLON.Color3(0.8, 0.96, 1);
+		const horizontal = this.createLine(
+			'north-celestial-pole-cross-horizontal',
+			[
+				{ ra: 350, decl: 88.4, altitudeAppa: projected.altitudeAppa, azimuth: projected.azimuth },
+				{ ra: 10, decl: 88.4, altitudeAppa: projected.altitudeAppa, azimuth: projected.azimuth },
+			],
+			crossColor,
+			0.72,
+			group,
+			radius + 2,
+			true,
+		);
+		if(horizontal){
+			horizontal.renderingGroupId = 2;
+		}
+		const vertical = this.createLine(
+			'north-celestial-pole-cross-vertical',
+			[
+				{ ra: 90, decl: 88.4, altitudeAppa: projected.altitudeAppa, azimuth: projected.azimuth },
+				{ ra: 270, decl: 88.4, altitudeAppa: projected.altitudeAppa, azimuth: projected.azimuth },
+			],
+			crossColor,
+			0.72,
+			group,
+			radius + 2,
+			true,
+		);
+		if(vertical){
+			vertical.renderingGroupId = 2;
+		}
+
+		const label = this.createTextPlane('北天极', 40, '#dff7ff', 'rgba(0,0,0,0)');
+		label.position = position.add(new BABYLON.Vector3(0, 34, 0));
+		label.parent = group;
+		label.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+		label.metadata = { labelKind: 'northPole' };
+		this.registerFollowerMesh(label, 'north-celestial-pole-marker', ()=>new BABYLON.Vector3(0, 34, 0));
+	}
+
+	createSu28Sectors(items, observer){
+		const normalizedObserver = observerFromData(observer);
+		const sectorStars = (items || [])
+			.filter((item)=>item && Number.isFinite(Number(item.ra)))
+			.slice()
+			.sort((a, b)=>Number(a.ra) - Number(b.ra));
+		if(sectorStars.length < 2){
+			return;
+		}
+		const group = this.makeGroup('su28-sector-layer');
+		const sectorRadius = BODY_RADIUS - 22;
+		const labelRadius = BODY_RADIUS - 2;
+		sectorStars.forEach((item, idx)=>{
+			const next = sectorStars[(idx + 1) % sectorStars.length];
+			const startRa = normalizeDegrees(item.ra);
+			const endRa = normalizeDegrees(next.ra);
+			const midRa = circularMidpoint(startRa, endRa);
+			const midDecl = clamp((Number(item.decl) + Number(next.decl)) / 2, -72, 78);
+			const sectorLabel = su28DisplayName(item);
+			const color = SU28_PALACE_COLORS[Math.floor(idx / 7) % SU28_PALACE_COLORS.length];
+			const segmentVisible = allAboveHorizon([item, next]);
+			const segment = this.createLine(
+				`su28-sector-${item.id || item.name || idx}`,
+				[item, next],
+				color,
+				0.7,
+				group,
+				sectorRadius,
+				true,
+			);
+			if(segment){
+				segment.metadata = { layerKind: 'su28Sector', label: `${sectorLabel}区间` };
+				segment.setEnabled(segmentVisible);
+				const registered = this.projectableLines.find((lineItem)=>lineItem.mesh === segment);
+				if(registered){
+					registered.visibilityMode = 'allAbove';
+					registered.lastProjectedSources = [item, next];
+				}
+			}
+			const labelSource = {
+				ra: midRa,
+				decl: midDecl,
+				name: `${sectorLabel}区间`,
+				altitudeAppa: 0,
+				azimuth: 0,
+			};
+			const label = this.createTextPlane(`${sectorLabel}区间`, 26, '#dceeff', 'rgba(0,0,0,0)');
+			label.position = toSkyVector(projectedEquatorialItem(labelSource, normalizedObserver && normalizedObserver.jd ? normalizedObserver.jd : 2451545, normalizedObserver), labelRadius);
+			label.parent = group;
+			label.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+			label.metadata = { labelKind: 'su28Sector' };
+			label.setEnabled(segmentVisible);
+			this.registerProjectableMesh(label, labelSource, labelRadius, {
+				visibilityMode: 'allAbove',
+				visibilitySources: [item, next],
+				lastProjectedSources: [item, next],
+			});
+		});
 	}
 
 	createBodies(bodies){
 		const group = this.makeGroup('body-layer');
 		bodies.forEach((body)=>{
-			const diameter = body.id === 'Sun' ? 24 : (body.id === 'Moon' ? 17 : (body.id === 'Jupiter' || body.id === 'Saturn' ? 15 : 12));
+			const diameter = {
+				Sun: 28,
+				Moon: 20,
+				Mercury: 13,
+				Venus: 16,
+				Mars: 15,
+				Jupiter: 19,
+				Saturn: 18,
+				Uranus: 15,
+				Neptune: 15,
+				Pluto: 12,
+			}[body.id] || 12;
 			const mesh = BABYLON.MeshBuilder.CreateSphere(`body-${body.id}`, { diameter, segments: TEXTURED_BODY_IDS.has(body.id) ? 32 : 18 }, this.scene);
 			mesh.position = toSkyVector(body, BODY_RADIUS);
 			mesh.material = this.createBodyMaterial(body);
@@ -1552,7 +2206,6 @@ class PlanetariumRenderer {
 				this.registerFollowerMesh(label, body.id, ()=>new BABYLON.Vector3(0, labelOffset, 0));
 			}
 		});
-		this.createEarthAnchor(group);
 	}
 
 	applyLabelVisibility(){
@@ -1564,6 +2217,19 @@ class PlanetariumRenderer {
 			const kind = mesh.metadata && mesh.metadata.labelKind;
 			if(kind === 'body'){
 				mesh.setEnabled(showBody);
+			}
+		});
+	}
+
+	applyModeBoundVisibility(){
+		(this.projectableLines || []).forEach((item)=>{
+			if(item && item.mesh && item.visibilityMode){
+				item.mesh.setEnabled(this.layerAllowsMesh(item.mesh) && shouldShowModeBoundItem(item, this.viewMode));
+			}
+		});
+		(this.projectableMeshes || []).forEach((item)=>{
+			if(item && item.mesh && item.visibilityMode){
+				item.mesh.setEnabled(this.layerAllowsMesh(item.mesh) && shouldShowModeBoundItem(item, this.viewMode));
 			}
 		});
 	}
@@ -1606,7 +2272,7 @@ class PlanetariumRenderer {
 		}
 		const pos = mesh.position;
 		if(this.viewMode === 'orbit'){
-			const radius = Math.max(360, this.camera.radius * 0.82);
+			const radius = clamp(this.camera.radius * 0.78, ORBIT_MIN_RADIUS, ORBIT_MAX_RADIUS);
 			BABYLON.Animation.CreateAndStartAnimation('planetarium-target-x', this.camera, 'target.x', 60, 36, this.camera.target.x, pos.x * 0.18, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
 			BABYLON.Animation.CreateAndStartAnimation('planetarium-target-y', this.camera, 'target.y', 60, 36, this.camera.target.y, pos.y * 0.18, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
 			BABYLON.Animation.CreateAndStartAnimation('planetarium-target-z', this.camera, 'target.z', 60, 36, this.camera.target.z, pos.z * 0.18, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
@@ -1639,10 +2305,36 @@ class PlanetariumRenderer {
 				});
 			}else if(group.name.indexOf('su28-layer') === 0){
 				group.setEnabled(!!this.layers.su28);
+			}else if(group.name.indexOf('su28-sector-layer') === 0){
+				group.setEnabled(!!this.layers.su28Sectors);
+			}else if(group.name.indexOf('zodiac-sector-layer') === 0){
+				group.setEnabled(!!this.layers.zodiacSectors);
 			}else if(group.name.indexOf('beidou-layer') === 0){
 				group.setEnabled(!!this.layers.beidou);
 			}
 		});
+		this.applyModeBoundVisibility();
+	}
+
+	layerAllowsMesh(mesh){
+		if(!mesh){
+			return true;
+		}
+		const name = mesh.name || '';
+		const parentName = mesh.parent && mesh.parent.name ? mesh.parent.name : '';
+		if(parentName.indexOf('overlay-layer') === 0){
+			if(name.indexOf('horizon') >= 0 || name.indexOf('meridian') >= 0){ return !!this.layers.horizon; }
+			if(name.indexOf('equator') >= 0){ return !!this.layers.equator; }
+			if(name.indexOf('ecliptic') >= 0){ return !!this.layers.ecliptic; }
+			if(name.indexOf('house') >= 0){ return !!this.layers.houses; }
+		}
+		if(parentName.indexOf('su28-sector-layer') === 0){
+			return !!this.layers.su28Sectors;
+		}
+		if(parentName.indexOf('zodiac-sector-layer') === 0){
+			return !!this.layers.zodiacSectors;
+		}
+		return true;
 	}
 
 	dispose(){
@@ -1650,6 +2342,12 @@ class PlanetariumRenderer {
 		window.removeEventListener('resize', this.resizeHandler);
 		if(this.wheelHandler){
 			this.canvas.removeEventListener('wheel', this.wheelHandler);
+		}
+		if(this.pointerDownHandler){
+			this.canvas.removeEventListener('pointerdown', this.pointerDownHandler);
+			this.canvas.removeEventListener('pointermove', this.pointerMoveHandler);
+			this.canvas.removeEventListener('pointerup', this.pointerUpHandler);
+			this.canvas.removeEventListener('pointercancel', this.pointerUpHandler);
 		}
 		this.clearData();
 		if(this.sky){
@@ -1689,8 +2387,9 @@ class PlanetariumBabylon extends Component{
 			searchMessage: '',
 			leftCollapsed: false,
 			observerOverride: null,
-			loading: true,
+			loading: false,
 			syncing: false,
+			syncLabel: '',
 			error: null,
 			speed: 0,
 			viewMode: 'ground',
@@ -1716,11 +2415,18 @@ class PlanetariumBabylon extends Component{
 		this.sceneSyncInFlight = false;
 		this.pendingRequestOptions = null;
 		this.playTimer = null;
+		this.backgroundFullTimer = null;
+		this.pendingFullRequest = null;
+		this.pendingFullRender = null;
+		this.lastInteractionAt = 0;
 		this.lastPlaybackSyncAt = 0;
 		this.metricTimer = null;
 		this.mountedAt = nowMs();
 		this.firstReadyLogged = false;
 		this.requestState = this.requestState.bind(this);
+		this.bootstrapState = this.bootstrapState.bind(this);
+		this.markInteraction = this.markInteraction.bind(this);
+		this.scheduleBackgroundFull = this.scheduleBackgroundFull.bind(this);
 		this.toggleLayer = this.toggleLayer.bind(this);
 		this.changeSpeed = this.changeSpeed.bind(this);
 		this.jumpNow = this.jumpNow.bind(this);
@@ -1752,8 +2458,9 @@ class PlanetariumBabylon extends Component{
 					}, 500);
 				}
 			},
+			this.markInteraction,
 		);
-		this.requestState({ showLoading: true, reason: 'initial' });
+		this.bootstrapState();
 	}
 
 	componentDidUpdate(prevProps, prevState){
@@ -1768,7 +2475,11 @@ class PlanetariumBabylon extends Component{
 		}
 		if(prevProps.fields !== this.props.fields){
 			const time = buildObservationTime(this.props.fields);
-			this.setState({ time }, this.requestState);
+			this.setState({
+				time,
+				selected: null,
+				speed: 0,
+			}, ()=>this.applyFastSceneChange('fields'));
 		}
 	}
 
@@ -1783,10 +2494,167 @@ class PlanetariumBabylon extends Component{
 			clearTimeout(this.metricTimer);
 			this.metricTimer = null;
 		}
+		if(this.backgroundFullTimer){
+			clearTimeout(this.backgroundFullTimer);
+			this.backgroundFullTimer = null;
+		}
 		if(this.renderer){
 			this.renderer.dispose();
 			this.renderer = null;
 		}
+	}
+
+	markInteraction(){
+		this.lastInteractionAt = nowMs();
+	}
+
+	scheduleBackgroundFull(options = {}){
+		if(this._isUnmounted){
+			return;
+		}
+		this.pendingFullRequest = {
+			showLoading: false,
+			requestKind: 'full',
+			reason: options.reason || 'background-full',
+			syncLabel: options.syncLabel || '补全天空...',
+		};
+		if(this.backgroundFullTimer){
+			clearTimeout(this.backgroundFullTimer);
+			this.backgroundFullTimer = null;
+		}
+		const waitMs = Math.max(1800, 3200 - (nowMs() - this.lastInteractionAt));
+		this.backgroundFullTimer = setTimeout(()=>{
+			this.backgroundFullTimer = null;
+			if(this._isUnmounted || !this.pendingFullRequest){
+				return;
+			}
+			if(nowMs() - this.lastInteractionAt < 1400){
+				this.scheduleBackgroundFull(this.pendingFullRequest);
+				return;
+			}
+			const request = this.pendingFullRequest;
+			this.pendingFullRequest = null;
+			this.requestState(request);
+		}, waitMs);
+	}
+
+	schedulePendingFullRender(){
+		if(this._isUnmounted || !this.pendingFullRender){
+			return;
+		}
+		if(this.backgroundFullTimer){
+			clearTimeout(this.backgroundFullTimer);
+			this.backgroundFullTimer = null;
+		}
+		const waitMs = Math.max(1200, 2200 - (nowMs() - this.lastInteractionAt));
+		this.backgroundFullTimer = setTimeout(()=>{
+			this.backgroundFullTimer = null;
+			if(this._isUnmounted || !this.pendingFullRender){
+				return;
+			}
+			if(nowMs() - this.lastInteractionAt < 1200){
+				this.schedulePendingFullRender();
+				return;
+			}
+			const pending = this.pendingFullRender;
+			this.pendingFullRender = null;
+			this.finishStateData(pending);
+		}, waitMs);
+	}
+
+	finishStateData(payload){
+		const { data, requestKind, started, apiMs, followupFull } = payload || {};
+		if(!data || this._isUnmounted){
+			this.requestInFlight = false;
+			return;
+		}
+		let renderMs = 0;
+		if(this.renderer){
+			renderMs = this.renderer.updateData(data, this.state.layers) || 0;
+		}
+		if(requestKind === 'full'){
+			cachePlanetariumState(data);
+		}
+		const firstReadyMs = this.firstReadyLogged ? this.state.metrics.firstReadyMs : Math.round(nowMs() - this.mountedAt);
+		this.firstReadyLogged = true;
+		this.pushPerfLog(requestKind === 'light' ? 'light-ready' : 'state-ready', {
+			apiMs,
+			renderMs,
+			totalMs: Math.round(nowMs() - started),
+			stars: data.meta ? data.meta.renderedCatalogCount : 0,
+			skyMode: data.sky ? data.sky.mode : undefined,
+		});
+		this.setState((prev)=>({
+			data,
+			loading: false,
+			syncing: !!followupFull,
+			syncLabel: followupFull ? '补全天空...' : '',
+			error: null,
+			metrics: {
+				...prev.metrics,
+				loadMs: Math.round(nowMs() - started),
+				apiMs,
+				renderMs,
+				firstReadyMs,
+				catalogCount: data.meta ? data.meta.renderedCatalogCount : 0,
+			},
+		}), ()=>{
+			this.requestInFlight = false;
+			this.flushPendingRequest();
+			if(followupFull && !this._isUnmounted){
+				this.scheduleBackgroundFull({
+					reason: 'background-full',
+					syncLabel: '补全天空...',
+				});
+			}
+		});
+	}
+
+	bootstrapState(){
+		const cached = getCachedPlanetariumState();
+		if(cached && this.renderer){
+			this.renderCachedState(cached);
+			return;
+		}
+		if(this.renderer){
+			this.renderer.createCardinals();
+		}
+		this.requestState({
+			requestKind: 'light',
+			reason: 'initial-light',
+			syncLabel: '准备基础天空...',
+			followupFull: true,
+		});
+	}
+
+	renderCachedState(data){
+		const started = nowMs();
+		let renderMs = 0;
+		if(this.renderer){
+			renderMs = this.renderer.updateData(data, this.state.layers) || 0;
+			renderMs += this.renderer.updateProjectedTime(this.state.time, this.getEffectiveFields()) || 0;
+		}
+		const firstReadyMs = this.firstReadyLogged ? this.state.metrics.firstReadyMs : Math.round(nowMs() - this.mountedAt);
+		this.firstReadyLogged = true;
+		this.pushPerfLog('cache-ready', {
+			renderMs,
+			totalMs: Math.round(nowMs() - started),
+			stars: data.meta ? data.meta.renderedCatalogCount : 0,
+		});
+		this.setState((prev)=>({
+			data,
+			loading: false,
+			syncing: false,
+			syncLabel: '',
+			error: null,
+			metrics: {
+				...prev.metrics,
+				loadMs: Math.round(nowMs() - started),
+				renderMs,
+				firstReadyMs,
+				catalogCount: data.meta ? data.meta.renderedCatalogCount : 0,
+			},
+		}));
 	}
 
 	pushPerfLog(event, extra = {}){
@@ -1953,19 +2821,29 @@ class PlanetariumBabylon extends Component{
 
 	applyFastSceneChange(reason){
 		if(!this.renderer || !this.state.data){
-			this.requestState({ showLoading: false, reason });
+			this.requestState({
+				showLoading: false,
+				reason,
+				requestKind: 'light',
+				followupFull: true,
+				syncLabel: '更新基础天空...',
+			});
 			return;
 		}
 		const renderMs = this.renderer.updateProjectedTime(this.state.time, this.getEffectiveFields());
 		this.setState((prev)=>({
-			syncing: false,
+			syncing: true,
+			syncLabel: '后台校准天空...',
 			metrics: {
 				...prev.metrics,
 				renderMs,
 				loadMs: 0,
 			},
 		}));
-		this.requestSceneCalibration(this.state.time, reason);
+		this.scheduleBackgroundFull({
+			reason,
+			syncLabel: '后台校准天空...',
+		});
 	}
 
 	async requestSceneCalibration(syncTimeArg, reason){
@@ -1991,8 +2869,8 @@ class PlanetariumBabylon extends Component{
 				renderMs,
 				stars: data.meta ? data.meta.renderedCatalogCount : 0,
 			});
-			this.setState((prev)=>({
-				data: {
+			this.setState((prev)=>{
+				const merged = {
 					...prev.data,
 					...data,
 					stars: prev.data && prev.data.stars ? prev.data.stars : data.stars,
@@ -2001,15 +2879,20 @@ class PlanetariumBabylon extends Component{
 						...(data.meta || {}),
 						renderedCatalogCount: prev.data && prev.data.meta ? prev.data.meta.renderedCatalogCount : 0,
 					},
-				},
-				syncing: false,
-				loading: false,
-				metrics: {
-					...prev.metrics,
-					apiMs,
-					renderMs,
-				},
-			}));
+				};
+				cachePlanetariumState(merged);
+				return {
+					data: merged,
+					syncing: false,
+					syncLabel: '',
+					loading: false,
+					metrics: {
+						...prev.metrics,
+						apiMs,
+						renderMs,
+					},
+				};
+			});
 		}finally{
 			this.sceneSyncInFlight = false;
 		}
@@ -2021,19 +2904,27 @@ class PlanetariumBabylon extends Component{
 			this.pendingRequestOptions = {
 				showLoading: false,
 				reason: opts.reason || 'pending',
+				requestKind: opts.requestKind || 'full',
+				syncLabel: opts.syncLabel,
+				followupFull: opts.followupFull,
 			};
 			return;
 		}
 		this.requestInFlight = true;
 		const seq = ++this.reqSeq;
 		const started = nowMs();
-		const showLoading = opts.showLoading !== false && !this.state.data;
+		const requestKind = opts.requestKind === 'light' ? 'light' : 'full';
+		const showLoading = false;
+		const syncLabel = opts.syncLabel || (requestKind === 'light' ? '准备基础天空...' : '补全天空...');
 		this.setState({
 			loading: showLoading,
-			syncing: !showLoading,
+			syncing: true,
+			syncLabel,
 			error: null,
 		});
-		const params = buildRequestParams(this.getEffectiveFields(), this.state.time);
+		const params = requestKind === 'light'
+			? buildInitialSceneParams(this.getEffectiveFields(), this.state.time)
+			: buildRequestParams(this.getEffectiveFields(), this.state.time);
 		const apiStarted = nowMs();
 		let rsp = null;
 		try{
@@ -2048,47 +2939,36 @@ class PlanetariumBabylon extends Component{
 			return;
 		}
 		const data = rsp && rsp.Result ? rsp.Result : rsp;
+		if(this._isUnmounted){
+			this.requestInFlight = false;
+			return;
+		}
 		if(!data || data.err){
 			this.pushPerfLog('request-error', { apiMs, err: data && data.err ? data.err : 'empty' });
 			this.setState({
 				loading: false,
 				syncing: false,
+				syncLabel: '',
 				error: data && data.err ? data.err : '天文馆数据载入失败',
 			});
 			this.requestInFlight = false;
 			this.flushPendingRequest();
 			return;
 		}
-		let renderMs = 0;
-		if(this.renderer){
-			renderMs = this.renderer.updateData(data, this.state.layers) || 0;
-		}
-		const firstReadyMs = this.firstReadyLogged ? this.state.metrics.firstReadyMs : Math.round(nowMs() - this.mountedAt);
-		this.firstReadyLogged = true;
-		this.pushPerfLog('state-ready', {
-			apiMs,
-			renderMs,
-			totalMs: Math.round(nowMs() - started),
-			stars: data.meta ? data.meta.renderedCatalogCount : 0,
-			skyMode: data.sky ? data.sky.mode : undefined,
-		});
-		this.setState((prev)=>({
+		const payload = {
 			data,
-			loading: false,
-			syncing: false,
-			error: null,
-			metrics: {
-				...prev.metrics,
-				loadMs: Math.round(nowMs() - started),
-				apiMs,
-				renderMs,
-				firstReadyMs,
-				catalogCount: data.meta ? data.meta.renderedCatalogCount : 0,
-			},
-		}), ()=>{
+			requestKind,
+			started,
+			apiMs,
+			followupFull: opts.followupFull,
+		};
+		if(requestKind === 'full' && nowMs() - this.lastInteractionAt < 700){
+			this.pendingFullRender = payload;
 			this.requestInFlight = false;
-			this.flushPendingRequest();
-		});
+			this.schedulePendingFullRender();
+			return;
+		}
+		this.finishStateData(payload);
 	}
 
 	flushPendingRequest(){
@@ -2166,7 +3046,7 @@ class PlanetariumBabylon extends Component{
 		if(picked && picked !== true){
 			this.setState({
 				selected: picked,
-				searchMessage: `已定位：${picked.displayName || bodyName(picked)}`,
+				searchMessage: `已定位：${bodyName(picked)}`,
 			});
 			return;
 		}
@@ -2212,23 +3092,17 @@ class PlanetariumBabylon extends Component{
 		if(!item){
 			return <div className="planetarium-empty">点击太阳、月亮、行星、二十八宿或北斗星点查看详情</div>;
 		}
+		const rows = detailRowsForItem(item, this.state.data && this.state.data.sky ? this.state.data.sky.moonPhase : null);
+		const subtitle = item.kind === 'catalogStar' || item.layer === 'stars'
+			? catalogIdText(item)
+			: bodyEnglishName(item);
 		return (
 			<div className="planetarium-detail">
-				<h3>{item.displayName || bodyName(item)}</h3>
-				<div><span>类型</span><strong>{objectType(item)}</strong></div>
-				<div><span>图层</span><strong>{item.layer || 'body'}</strong></div>
-				<div><span>可见性</span><strong>{visibilityText(item)}</strong></div>
-				<div><span>高度</span><strong>{formatDeg(item.altitudeAppa)}</strong></div>
-				<div><span>方位</span><strong>{formatDeg(item.azimuth)}</strong></div>
-				<div><span>赤经</span><strong>{formatDeg(item.ra)}</strong></div>
-				<div><span>赤纬</span><strong>{formatDeg(item.decl)}</strong></div>
-				<div><span>黄经</span><strong>{formatDeg(item.lon)}</strong></div>
-				<div><span>黄纬</span><strong>{formatDeg(item.lat)}</strong></div>
-				<div><span>星等</span><strong>{item.mag === undefined || item.mag === null ? '--' : item.mag}</strong></div>
-				<div><span>黄道星座</span><strong>{item.zodiacSign ? `${item.zodiacSign} ${formatDeg(item.zodiacDegree)}` : (item.sign || '--')}</strong></div>
-				<div><span>星座/宿</span><strong>{item.constellation || item.su28 || '--'}</strong></div>
-				<div><span>宫位</span><strong>{item.house || '--'}</strong></div>
-				<div><span>光谱/色温</span><strong>{item.spectralClass || (item.colorTemperature ? `${Math.round(item.colorTemperature)}K` : '--')}</strong></div>
+				<h3>{bodyName(item)}</h3>
+				{valuePresent(subtitle) ? <p>{subtitle}</p> : null}
+				{rows.map((row)=>(
+					<div key={row[0]}><span>{row[0]}</span><strong>{row[1]}</strong></div>
+				))}
 			</div>
 		);
 	}
@@ -2292,6 +3166,8 @@ class PlanetariumBabylon extends Component{
 							<button type="button" className={this.state.speed === 0 ? 'is-active' : ''} onClick={()=>this.changeSpeed(0)}>暂停</button>
 							<button type="button" className={this.state.speed === 1 ? 'is-active' : ''} onClick={()=>this.changeSpeed(1)}>1x</button>
 							<button type="button" className={this.state.speed === 60 ? 'is-active' : ''} onClick={()=>this.changeSpeed(60)}>60x</button>
+							<button type="button" className={this.state.speed === 1000 ? 'is-active' : ''} onClick={()=>this.changeSpeed(1000)}>1000x</button>
+							<button type="button" className={this.state.speed === 10000 ? 'is-active' : ''} onClick={()=>this.changeSpeed(10000)}>10000x</button>
 							<button type="button" className={this.state.speed === 86400 ? 'is-active' : ''} onClick={()=>this.changeSpeed(86400)}>日进</button>
 							<button type="button" className={this.state.speed === 2592000 ? 'is-active' : ''} onClick={()=>this.changeSpeed(2592000)}>月进</button>
 							<button type="button" className={this.state.speed === 31536000 ? 'is-active' : ''} onClick={()=>this.changeSpeed(31536000)}>年进</button>
@@ -2315,16 +3191,17 @@ class PlanetariumBabylon extends Component{
 							{this.renderLayerButton('horizon', '地平/子午')}
 							{this.renderLayerButton('equator', '天赤道')}
 							{this.renderLayerButton('ecliptic', '黄道')}
+							{this.renderLayerButton('zodiacSectors', '星座区间')}
 							{this.renderLayerButton('houses', '宫位')}
 							{this.renderLayerButton('su28', '二十八宿')}
+							{this.renderLayerButton('su28Sectors', '宿区间')}
 							{this.renderLayerButton('beidou', '北斗')}
 						</div>
 					</div>
 				</aside>
 				<main className="planetarium-stage">
 					<canvas ref={this.canvasRef} className="planetarium-canvas" />
-					{this.state.loading ? <div className="planetarium-status">同步天空中...</div> : null}
-					{!this.state.loading && this.state.syncing ? <div className="planetarium-status is-syncing">更新天空...</div> : null}
+					{this.state.syncing ? <div className="planetarium-status is-syncing">{this.state.syncLabel || '更新天空...'}</div> : null}
 					{this.state.error ? <div className="planetarium-status is-error">{this.state.error}</div> : null}
 				</main>
 				<aside className="planetarium-side planetarium-right">
